@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meeting Agendas | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Digital Archive'}) %>
+    <div class="page">
+      <%
+        const _fmt = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }) : '';
+        const _total = groups.reduce((n, g) => n + g.items.length, 0);
+        const _bodyShort = { 'Board of Trustees': 'BOT', 'Administrative Council': 'Admin Council', 'Academic Council': 'Academic Council', 'RIC Council': 'RIC Council' };
+      %>
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Digital Archive</h1>
+        </div>
+      </div>
+
+      <%- include('partials/archive-tabs', { tab: 'agendas' }) %>
+
+      <% if (notice) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= notice %></div><% } %>
+      <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+
+
+      <form action="/archive/agendas" method="GET">
+        <div class="sbar">
+          <input type="text" name="q" value="<%= q %>" placeholder="<%= office ? 'Search agenda titles, meetings, or words inside the papers' : 'Search agenda titles or meetings' %>">
+          <% if (body) { %><input type="hidden" name="body" value="<%= body %>"><% } %>
+          <button type="submit" class="btn btn-navy btn-sm">Search</button>
+          <a href="/archive/agendas" class="btn btn-light btn-sm">Clear</a>
+        </div>
+      </form>
+
+      <% if (office) {
+           const _c = bodyCounts || {};
+           const _href = k => '/archive/agendas' + (k || q ? '?' : '') + (k ? 'body=' + k : '') + (k && q ? '&' : '') + (q ? 'q=' + encodeURIComponent(q) : '');
+           const _councils = [['councils', 'All councils'], ['academic', 'Academic Council'], ['admin', 'Administrative Council'], ['ric', 'RIC Council']];
+           const _inCouncils = ['councils', 'academic', 'admin', 'ric'].includes(body);
+           const _short = { academic: 'Academic', admin: 'Administrative', ric: 'RIC' }; %>
+        <!-- Sort the archived agendas: all, the Board of Trustees, or the
+             Board of Councils (a dropdown to pick one council). -->
+        <nav class="body-tabs" aria-label="Show agendas of">
+          <a href="<%= _href('') %>" class="body-tab <%= !body ? 'is-on' : '' %>" <%= !body ? 'aria-current=page' : '' %>>All meetings <span class="n"><%= _c.all || 0 %></span></a>
+          <a href="<%= _href('bot') %>" class="body-tab <%= body === 'bot' ? 'is-on' : '' %>" <%= body === 'bot' ? 'aria-current=page' : '' %>>Board of Trustees <span class="n"><%= _c.bot || 0 %></span></a>
+          <details class="bc-drop">
+            <summary class="body-tab <%= _inCouncils ? 'is-on' : '' %>">
+              Board of Councils<%= _short[body] ? ': ' + _short[body] : '' %>
+              <span class="n"><%= _c[_short[body] ? body : 'councils'] || 0 %></span>
+              <svg class="icon icon-sm bc-caret"><use href="#i-chevron-down" xlink:href="#i-chevron-down"/></svg>
+            </summary>
+            <div class="bc-menu" role="menu">
+              <% _councils.forEach(function (c) { %>
+                <a role="menuitem" href="<%= _href(c[0]) %>" class="<%= body === c[0] ? 'is-on' : '' %>"><%= c[1] %> <span class="n"><%= _c[c[0]] || 0 %></span></a>
+              <% }) %>
+            </div>
+          </details>
+        </nav>
+      <% } else if (memberBody) { %>
+      <% } %>
+
+      <% if (failed) { %>
+        <div class="alert a-err">The archived agendas could not be loaded. Please try again.</div>
+      <% } else if (!groups.length) { %>
+        <div class="card"><div class="cb">
+          <div class="empty" style="padding:30px 18px">
+            <div class="ei"><svg class="icon" style="width:34px;height:34px"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg></div>
+            <h3><%= q || body ? 'No archived agenda matches your search' : 'No archived agendas yet' %></h3>
+          </div>
+        </div></div>
+      <% } %>
+
+      <% if (groups.length) { %>
+        <div class="ag-bar">
+          <button type="button" class="ag-all" id="agAll" aria-pressed="false">Show all agendas</button>
+        </div>
+      <% } %>
+      <% groups.forEach(function (g) {
+           // Closed by default (meetings have many agendas); opened when
+           // searching or when coming to one of its items.
+           const _open = !!(q || body) || g.items.some(function (it) { return it.item_id === focusItem; }); %>
+        <section class="card ag-meeting">
+          <div class="ch ag-head">
+            <button type="button" class="ag-toggle" aria-expanded="<%= _open ? 'true' : 'false' %>" aria-controls="agItems<%= g.meetingId %>">
+              <svg class="icon icon-sm"><use href="#i-chevron-down" xlink:href="#i-chevron-down"/></svg>
+              <span class="sr-only">Show or hide the agendas of <%= g.title %></span>
+            </button>
+            <div class="ag-head-main">
+              <h3><svg class="icon"><use href="#i-building" xlink:href="#i-building"/></svg> <%= g.title %></h3>
+              <div class="ag-sub">
+                <span class="badge b-blue"><%= _bodyShort[g.type] || g.type %></span>
+                <% if (g.number) { %><span>No. <%= g.number %></span><% } %>
+                <% if (g.date) { %><span><%= _fmt(g.date) %></span><% } %>
+                <span><%= g.items.length %> agenda item<%= g.items.length === 1 ? '' : 's' %></span>
+              </div>
+            </div>
+            <% if (office) { %>
+              <a href="/meeting/<%= g.meetingId %>" class="btn btn-light btn-sm">Open meeting</a>
+            <% } %>
+          </div>
+          <ol class="ag-items" id="agItems<%= g.meetingId %>" <%= _open ? '' : 'hidden' %>>
+            <% g.items.forEach(function (it) {
+                 const a = it.access;
+                 const viewUrl = '/meeting/' + it.meeting_id + '/item/' + it.item_id + '/review'; %>
+              <li class="ag-item <%= focusItem === it.item_id ? 'is-focus' : '' %>" id="item-<%= it.item_id %>">
+                <span class="ag-num"><%= it.item_order %></span>
+                <div class="ag-main">
+                  <div class="ag-title"><%= it.item_title %></div>
+                  <div class="ag-meta">
+                    <%= it.item_category %>
+                    <% if (it.file_kind === 'video') { %> · <span class="vid-tag">Video</span><% } else if (it.file_kind === 'pdf') { %> · PDF<% } else { %> · no paper attached<% } %>
+                  </div>
+                  <% if (it.snippet) { %><div class="ag-snippet"><%= it.snippet %></div><% } %>
+
+                  <% if (!office && a.state === 'pending') { %>
+                    <div class="ag-state is-wait">Request sent <%= _fmt(a.request.created_at) %>. Waiting for the Office of the Board Secretary.</div>
+                  <% } else if (!office && a.state === 'declined') { %>
+                    <div class="ag-state is-no">Your request was declined<%= a.request.decision_note ? ': ' + a.request.decision_note : '.' %></div>
+                  <% } else if (!office && a.state === 'expired') { %>
+                    <div class="ag-state">Your permission to view this ended on <%= _fmt(a.request.expires_at) %>.</div>
+                  <% } else if (!office && a.state === 'open' && a.until) { %>
+                    <div class="ag-state is-ok">Approved. You can view it until <%= _fmt(a.until) %>.</div>
+                  <% } %>
+
+                  <% if (!office && it.file_kind && ['locked', 'declined', 'expired'].includes(a.state)) { %>
+                    <details class="ag-req" <%= focusItem === it.item_id ? 'open' : '' %>>
+                      <summary class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-lock" xlink:href="#i-lock"/></svg> Request access</summary>
+                      <form action="/archive/agendas/<%= it.item_id %>/request" method="POST">
+                        <label for="why<%= it.item_id %>">Why do you need to view this agenda item?</label>
+                        <textarea id="why<%= it.item_id %>" name="reason" maxlength="500" required minlength="5"
+                                  placeholder="e.g. For reference in the Academic Council's review of the BSIT curriculum"></textarea>
+                        <button type="submit" class="btn btn-navy btn-sm">Send request</button>
+                      </form>
+                    </details>
+                  <% } %>
+                </div>
+                <div class="ag-act">
+                  <% if (it.file_kind && a.state === 'open') { %>
+                    <a href="<%= viewUrl %>" class="btn btn-navy btn-sm"><svg class="icon icon-sm"><use href="#i-eye" xlink:href="#i-eye"/></svg> <%= it.file_kind === 'video' ? 'Watch' : 'View' %></a>
+                  <% } else if (it.file_kind) { %>
+                    <span class="ag-lock" title="Closed"><svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg> Closed</span>
+                  <% } %>
+                </div>
+              </li>
+            <% }) %>
+          </ol>
+        </section>
+      <% }) %>
+      <% if (_total) { %><p class="muted fs12"><%= _total %> archived agenda item<%= _total === 1 ? '' : 's' %> in <%= groups.length %> meeting<%= groups.length === 1 ? '' : 's' %>.</p><% } %>
+    </div>
+  </div>
+</div>
+<style>
+  .body-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .body-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 20px; border: 1px solid #d5dbe7;
+              background: #fff; color: #334155; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .body-tab:hover { border-color: #1a3d80; color: #0d1f45; }
+  .body-tab .n { font-size: 11px; background: #eef1f6; color: #64748b; border-radius: 10px; padding: 0 7px; }
+  .body-tab.is-on { background: #0d1f45; border-color: #0d1f45; color: #fff; }
+  .body-tab.is-on .n { background: rgba(255,255,255,.2); color: #fff; }
+  .bc-drop { position: relative; }
+  .bc-drop > summary { list-style: none; cursor: pointer; }
+  .bc-drop > summary::-webkit-details-marker { display: none; }
+  .bc-caret { transition: transform .15s ease; }
+  .bc-drop[open] .bc-caret { transform: rotate(180deg); }
+  .bc-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; min-width: 230px; background: #fff;
+             border: 1px solid #d5dbe7; border-radius: 10px; box-shadow: 0 10px 28px rgba(13,31,69,.14); padding: 6px; }
+  .bc-menu a { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px;
+               font-size: 13px; font-weight: 600; color: #334155; text-decoration: none; }
+  .bc-menu a:hover { background: #f1f5fd; color: #0d1f45; }
+  .bc-menu a.is-on { background: #0d1f45; color: #fff; }
+  .bc-menu a .n { font-size: 11px; background: #eef1f6; color: #64748b; border-radius: 10px; padding: 0 7px; }
+  .bc-menu a.is-on .n { background: rgba(255,255,255,.2); color: #fff; }
+  .ag-meeting { margin-bottom: 14px; }
+  .ag-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .ag-head-main { flex: 1; min-width: 0; cursor: pointer; }
+  .ag-toggle { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #e3e7f0; border-radius: 6px; background: #fff;
+               color: #1a3d80; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .ag-toggle:hover { background: #f1f5fd; }
+  .ag-toggle .icon { transition: transform .15s ease; }
+  .ag-toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
+  .ag-meeting:has(.ag-items[hidden]) .ag-head { border-bottom: 0; }
+  .ag-bar { display: flex; justify-content: flex-end; margin: -4px 0 8px; }
+  .ag-all { background: none; border: 0; color: #1a3d80; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 2px 4px; }
+  .ag-all:hover { text-decoration: underline; }
+  .ag-head h3 { margin: 0; }
+  .ag-sub { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; font-size: 12px; color: #64748b; }
+  .ag-items { list-style: none; margin: 0; padding: 0; }
+  .ag-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; border-top: 1px solid #eef1f6; }
+  .ag-item:first-child { border-top: 0; }
+  .ag-item.is-focus { background: #fffbeb; }
+  .ag-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px; background: #0d1f45; color: #f5c96a;
+            font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .ag-main { flex: 1; min-width: 0; }
+  .ag-title { font-weight: 600; font-size: 13.5px; color: #0f172a; }
+  .ag-meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .ag-snippet { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.45; }
+  .ag-state { font-size: 12px; margin-top: 6px; color: #475569; }
+  .ag-state.is-wait { color: #1a3d80; }
+  .ag-state.is-no { color: #c0392b; }
+  .ag-state.is-ok { color: #166534; }
+  .ag-req { margin-top: 8px; }
+  .ag-req summary { list-style: none; display: inline-flex; cursor: pointer; }
+  .ag-req summary::-webkit-details-marker { display: none; }
+  .ag-req form { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
+  .ag-req label { font-size: 12px; font-weight: 600; color: #334155; }
+  .ag-req textarea { min-height: 64px; }
+  .ag-req button { align-self: flex-start; }
+  .ag-act { flex-shrink: 0; }
+  .ag-lock { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .ag-lock .icon { width: 14px; height: 14px; }
+  .vid-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #fff4dc;
+             color: #8a5a00; border-radius: 8px; padding: 1px 6px; }
+</style>
+<script>
+// Close the Board of Councils menu when clicking elsewhere.
+document.addEventListener('click', function (e) {
+  document.querySelectorAll('.bc-drop[open]').forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute('open'); });
+});
+(function () {
+  var toggles = document.querySelectorAll('.ag-toggle');
+  var all = document.getElementById('agAll');
+  function set(b, open) {
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.getElementById(b.getAttribute('aria-controls')).hidden = !open;
+  }
+  function sync() {
+    if (!all) return;
+    var open = Array.prototype.every.call(toggles, function (b) { return b.getAttribute('aria-expanded') === 'true'; });
+    all.textContent = open ? 'Hide all agendas' : 'Show all agendas';
+    all.setAttribute('aria-pressed', open ? 'true' : 'false');
+  }
+  toggles.forEach(function (b) {
+    b.addEventListener('click', function () { set(b, b.getAttribute('aria-expanded') !== 'true'); sync(); });
+    // Clicking the meeting's title opens or closes it too.
+    var title = b.parentNode.querySelector('.ag-head-main');
+    if (title) title.addEventListener('click', function () { b.click(); });
+  });
+  if (all) all.addEventListener('click', function () {
+    var open = all.getAttribute('aria-pressed') !== 'true';
+    toggles.forEach(function (b) { set(b, open); });
+    sync();
+  });
+  sync();
+})();
+</script>
+</body></html>

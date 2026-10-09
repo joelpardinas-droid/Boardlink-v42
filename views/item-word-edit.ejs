@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Edit the words | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/item-word-edit.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Edit the Words'}) %>
+    <div class="page we-page">
+
+      <div class="ph we-ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> Edit the words</h1>
+          <p>Item <%= item.item_order %>: <%= item.item_title %> — <%= item.item_pdf_name || 'document.pdf' %>
+             (version <%= Number(item.item_pdf_version || 1) %>)</p>
+        </div>
+        <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/review" class="btn btn-light btn-sm">
+          <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to document
+        </a>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert a-err we-alert">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %>
+        </div>
+      <% } %>
+      <div id="weError" class="alert a-err we-alert" hidden></div>
+
+      <% if (!ready.ok) { %>
+        <div class="card we-setup">
+          <div class="cb">
+            <h2><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+                Editing the words is not set up on this computer yet</h2>
+            <p>Everything else in BOARDLINK works as normal. To turn this on, do the following
+               <strong>on the computer that runs BOARDLINK</strong>:</p>
+            <ol class="we-setup-steps">
+              <% (ready.steps || []).forEach(s => { %><li><%= s %></li><% }) %>
+            </ol>
+            <% if (ready.anyPython && ready.missing.includes('python-docx')) { %>
+              <p class="we-setup-cmd"><code>pip install python-docx</code></p>
+            <% } %>
+            <form method="POST" class="we-setup-form"
+                  action="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/words/recheck">
+              <button type="submit" class="btn btn-gold btn-sm">
+                <svg class="icon icon-sm"><use href="#i-refresh" xlink:href="#i-refresh"/></svg>
+                I have installed it — check again
+              </button>
+              <span class="we-note">No need to restart BOARDLINK.</span>
+            </form>
+            <% if (typeof checked !== 'undefined' && checked) { %>
+              <p class="we-setup-again">
+                Still not found. If you have just installed Python, close and reopen Command Prompt
+                (an open one does not know about it yet), then run
+                <code>python -c "import pdf2docx, docx"</code> — whatever that prints is the real problem.
+              </p>
+            <% } %>
+            <p class="we-note">
+              BOARDLINK looks for Python as <code>python</code>, then <code>py</code>, then <code>python3</code><% if (ready.python || ready.anyPython) { %>
+              (it found <code><%= ready.python || ready.anyPython %></code>)<% } %>,
+              and for LibreOffice as <code>soffice</code> or in its usual folder<% if (ready.soffice) { %>
+              (it found <code><%= ready.soffice %></code>)<% } %>.
+            </p>
+          </div>
+        </div>
+      <% } else if (!hasWord) { %>
+        <div class="alert a-info we-alert we-needs-word">
+          <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg>
+          <div>
+            <strong>This document is a PDF.</strong>
+            <strong>Attach the Word (.docx) version of this document below.</strong>
+          </div>
+        </div>
+      <% } else if (scanned) { %>
+        <div class="alert a-warn we-alert">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+          This document is a scan — a picture of printed paper — so its words cannot be edited.
+          You can still <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/edit">reorder, turn or remove its pages</a>,
+          or replace it with a PDF saved from Word.
+        </div>
+      <% } %>
+
+      <% if (ready.ok && !scanned && hasWord) { %>
+        <div class="we-bar" id="weBar">
+          <span class="we-status" id="weStatus">
+            <span class="we-spin" aria-hidden="true"></span> Preparing the document…
+          </span>
+          <span class="we-changed" id="weChanged" hidden></span>
+          <span class="we-spacer"></span>
+          <button type="button" class="btn btn-light btn-sm" id="weUndo" hidden>Undo my changes</button>
+          <button type="button" class="btn btn-gold btn-sm" id="weSave" disabled>
+            <svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg>
+            Save as the new document
+          </button>
+        </div>
+
+        <div class="we-split">
+          <section class="we-doc" aria-label="The words of this document">
+            <div id="weBlocks" class="we-blocks" aria-live="polite">
+              <p class="we-loading"><span class="we-spin" aria-hidden="true"></span> Opening the Word file…</p>
+            </div>
+          </section>
+
+          <aside class="we-side" aria-label="Members' comments on this document">
+            <div class="we-side-head">
+              <h2><svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg>
+                  Comments <span class="we-count"><%= commentCount %></span></h2>
+              <p>
+                <% if (commentCount) { %>
+                  What the Board asked about. <strong>None of these are deleted</strong> when you save —
+                  BOARDLINK looks for each comment's words in your new version and moves its highlight there.
+                  Keep those words where you can.
+                <% } else { %>
+                  No comments point into this document yet.
+                <% } %>
+              </p>
+            </div>
+            <div id="weComments" class="we-comments">
+              <% comments.forEach(c => { %>
+                <article class="we-c" data-id="<%= c.id %>" data-quote="<%= c.quote %>">
+                  <div class="we-c-top">
+                    <% if (c.page) { %><span class="we-c-page">p. <%= c.page %></span><% } %>
+                    <% if (c.kind === 'area') { %><span class="we-c-area">Marked area</span><% } %>
+                    <% if (c.stale) { %><span class="we-c-flag">to check</span><% } %>
+                  </div>
+                  <% if (c.quote) { %><p class="we-c-quote">“<%= c.quote %>”</p><% } %>
+                  <p class="we-c-text"><%= c.text %></p>
+                  <p class="we-c-who"><%= c.author %> <span><%= c.roleLabel %></span></p>
+                  <p class="we-c-where" hidden></p>
+                </article>
+              <% }) %>
+              <% if (!commentCount) { %>
+                <p class="we-c-none">Nothing to keep an eye on.</p>
+              <% } %>
+            </div>
+          </aside>
+        </div>
+      <% } %>
+
+      <details class="card we-word" <%= hasWord ? '' : 'open' %>>
+        <summary>
+          <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg>
+          <%= hasWord ? 'Or edit it in Microsoft Word' : 'Attach the Word version of this document' %>
+        </summary>
+        <div class="cb">
+          <% if (hasWord) { %>
+          <% } else { %>
+          <% } %>
+          <div class="we-word-row">
+            <% if (ready.ok && hasWord) { %>
+              <a class="btn btn-light btn-sm"
+                 href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/word.docx">
+                <svg class="icon icon-sm"><use href="#i-download" xlink:href="#i-download"/></svg>
+                Download as Word
+              </a>
+            <% } %>
+            <form method="POST" enctype="multipart/form-data" id="weUpForm" class="we-word-form"
+                  action="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/words">
+              <label class="btn btn-light btn-sm we-add">
+                <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                <span id="weFileLabel"><%= hasWord ? 'Choose the edited Word file' : 'Choose the Word file' %></span>
+                <input type="file" name="word_file" id="weFile"
+                       accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                       <%= ready.ok ? '' : 'disabled' %> required>
+              </label>
+              <button type="submit" class="btn <%= hasWord ? 'btn-light' : 'btn-gold' %> btn-sm" id="weUpSave"
+                      <%= ready.ok ? '' : 'disabled' %>><%= hasWord ? 'Send it back' : 'Attach and use it' %></button>
+            </form>
+          </div>
+          <p class="we-note">Save it from Word as <strong>.docx</strong>, not PDF. Up to <%= Number(maxUploadMb) || 100 %> MB.</p>
+        </div>
+      </details>
+
+      <% if (versions && versions.length) { %>
+        <div class="card we-versions">
+          <div class="ch"><h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Earlier versions</h3></div>
+          <div class="cb">
+            <ul>
+              <% versions.forEach(v => { %>
+                <li>
+                  <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/v<%= v.version %>.pdf">Version <%= v.version %></a>
+                  <span><%= v.pages ? v.pages + ' page' + (v.pages === 1 ? '' : 's') : '' %><% if (v.note) { %> — <%= v.note %><% } %></span>
+                  <span class="we-when">
+                    <%= new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }) %><% if (v.created_by_name) { %>, <%= v.created_by_name %><% } %>
+                  </span>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        </div>
+      <% } %>
+
+      <noscript><div class="alert a-warn">Editing the words on this page needs JavaScript. You can still use Microsoft Word above.</div></noscript>
+      <script type="application/json" id="weData">
+        <%- JSON.stringify({
+              blocksUrl: `/meeting/${meeting.meeting_id}/item/${item.item_id}/document/words/blocks`,
+              saveUrl:   `/meeting/${meeting.meeting_id}/item/${item.item_id}/document/words`,
+              ready:     !!ready.ok && !scanned && hasWord,
+            }) %>
+      </script>
+      <script type="module" src="/js/item-word-edit.js"></script>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Notifications | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Notifications'}) %>
+    <div class="page">
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-bell" xlink:href="#i-bell"/></svg> Notifications</h1>
+        </div>
+        <% if (notices.some(n => !n.read_at)) { %>
+        <form action="/notifications/read-all" method="POST" style="margin:0">
+          <button type="submit" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Mark all as read</button>
+        </form>
+        <% } %>
+      </div>
+      <div class="card">
+        <% if (!notices.length) { %>
+          <div class="nb-empty" style="padding:40px 14px">No notifications yet.</div>
+        <% } else { %>
+        <ul class="nt-list">
+          <% notices.forEach(function(n){ const d = new Date(n.created_at); %>
+          <li>
+            <a class="nb-item<%= n.read_at ? '' : ' is-unread' %>" href="/notifications/<%= n.notification_id %>/open">
+              <span class="nb-ic"><svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg></span>
+              <span class="nb-body">
+                <span class="nb-msg"><%= n.message %></span>
+                <span class="nb-time"><%= isNaN(d) ? '' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) %><%= n.read_at ? '' : ' · New' %></span>
+              </span>
+            </a>
+          </li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

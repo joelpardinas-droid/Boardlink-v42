@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Summary | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'AI Summary'}) %>
+    <div class="page">
+      <div class="ph"><div><h1><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> AI Meeting Summary</h1></div><a href="/meeting" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back</a></div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-settings" xlink:href="#i-settings"/></svg> Generate Summary</h3></div>
+          <div class="cb">
+            <form action="/meeting/summary" method="POST">
+              <div class="fg"><label>Meeting Reference *</label><input type="text" name="meetingRef" placeholder="e.g. 4th Regular Board Meeting 2025" required></div>
+              <div class="fg">
+                <label>Source</label>
+                <select name="summarySource">
+                  <option>From AI Transcript</option>
+                  <option>From Uploaded Minutes</option>
+                  <option>From Audio Recording</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-navy"><svg class="icon"><use href="#i-cpu" xlink:href="#i-cpu"/></svg> Generate AI Summary</button>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg> Summary Output</h3></div>
+          <div class="cb">
+            <%if(result){%>
+              <%if(typeof fallbackReason !== 'undefined' && fallbackReason){%>
+                <div class="alert a-warn fs12" style="margin-bottom:12px">
+                  <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <strong>Showing demo summary</strong> — Ollama could not generate a real summary.<br>
+                  <span style="font-family:monospace;font-size:11px">Reason: <%=fallbackReason%></span>
+                </div>
+              <%}%>
+              <div class="docbox"><%=result%></div>
+              <div class="row mt14">
+                <button class="btn btn-gold btn-sm"><svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download</button>
+                <button class="btn btn-light btn-sm"><svg class="icon"><use href="#i-mail" xlink:href="#i-mail"/></svg> Distribute</button>
+              </div>
+            <%}else{%>
+              <div class="empty"><div class="ei"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg></div><h3>No Summary Yet</h3></div>
+            <%}%>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

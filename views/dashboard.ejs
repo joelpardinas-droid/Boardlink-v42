@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Dashboard'}) %>
+    <div class="page">
+
+      <div class="ph">
+        <div><h1>Dashboard</h1></div>
+      </div>
+
+      <div class="stats">
+        <% const _n = v => (counts && v != null) ? Number(v).toLocaleString('en-US') : '—'; %>
+        <div class="stat"><div class="s-ico ic-b"><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg></div><div><div class="s-val"><%= _n(counts && counts.documents) %></div><div class="s-lbl">Total Documents</div></div></div>
+        <div class="stat"><div class="s-ico ic-g"><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg></div><div><div class="s-val"><%= _n(counts && counts.pendingAgendas) %></div><div class="s-lbl">Pending Agendas</div></div></div>
+        <div class="stat"><div class="s-ico ic-gr"><svg class="icon"><use href="#i-calendar" xlink:href="#i-calendar"/></svg></div><div><div class="s-val"><%= _n(counts && counts.upcomingMeetings) %></div><div class="s-lbl">Upcoming Meetings</div></div></div>
+        <div class="stat"><div class="s-ico ic-p"><svg class="icon"><use href="#i-users" xlink:href="#i-users"/></svg></div><div><div class="s-val"><%= _n(counts && counts.activeUsers) %></div><div class="s-lbl">Active Users</div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Recent Documents</h3><a href="/archive" class="btn btn-light btn-sm">View All</a></div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>#</th><th>Resolution No.</th><th>Title</th><th>Year</th><th>Date Archived</th><th></th></tr></thead>
+            <tbody>
+              <% if (!recent || !recent.length) { %>
+                <tr><td colspan="6" class="muted" style="padding:22px 16px;text-align:center">
+                  No documents in the Digital Archive yet.
+                </td></tr>
+              <% } else { recent.forEach(function (d, i) { %>
+              <tr>
+                <td class="muted" data-label="#"><%= i + 1 %></td>
+                <td class="fw7" data-label="Resolution No."><%= d.category || '—' %></td>
+                <td data-label="Title"><%= d.title %></td>
+                <td data-label="Year"><%= d.doc_year %></td>
+                <td class="muted" data-label="Date Archived"><%= d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' %></td>
+                <td><a href="/archive/<%= d.document_id %>" class="btn btn-light btn-sm">View</a></td>
+              </tr>
+              <% }) } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body></html>

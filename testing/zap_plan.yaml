@@ -1,0 +1,28 @@
+env:
+  contexts:
+    - name: boardlink
+      urls: ["http://127.0.0.1:3100"]
+      includePaths: ["http://127.0.0.1:3100.*"]
+      excludePaths: ["http://127.0.0.1:3100/logout.*"]
+  parameters:
+    failOnError: false
+    progressToStdout: true
+jobs:
+  - type: replacer
+    rules:
+      - description: session
+        matchType: req_header
+        matchString: Cookie
+        replacementString: "PASTE-boardlink.sid-COOKIE-HERE"
+  - type: spider
+    parameters: {context: boardlink, maxDuration: 5, maxDepth: 6}
+  - type: passiveScan-wait
+    parameters: {maxDuration: 5}
+  - type: activeScan
+    parameters: {context: boardlink, maxScanDurationInMins: 25, maxRuleDurationInMins: 3, threadPerHost: 4}
+  - type: passiveScan-wait
+    parameters: {maxDuration: 5}
+  - type: report
+    parameters: {template: traditional-json, reportDir: ./zapout, reportFile: zap_report}
+  - type: report
+    parameters: {template: traditional-html, reportDir: ./zapout, reportFile: zap_report}

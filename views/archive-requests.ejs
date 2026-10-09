@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Access Requests | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Digital Archive'}) %>
+    <div class="page">
+      <%
+        const _fmt = (d, t) => d ? new Date(d).toLocaleString('en-US', Object.assign({ month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }, t ? { hour: 'numeric', minute: '2-digit' } : {})) : '';
+        const waiting = requests.filter(r => r.status === 'pending');
+        const answered = requests.filter(r => r.status !== 'pending');
+        const _docs = typeof docRequests !== 'undefined' ? docRequests : [];
+        const dWaiting = _docs.filter(r => r.status === 'pending');
+        const dAnswered = _docs.filter(r => r.status !== 'pending');
+        const _h = typeof accessHours !== 'undefined' ? accessHours : 24;
+        const _span = _h % 24 === 0 ? (_h / 24) + ' day' + (_h === 24 ? '' : 's') : _h + ' hour' + (_h === 1 ? '' : 's');
+        const _docName = r => (r.doc_type === 'Resolution' && r.category ? 'Resolution No. ' + r.category + ': ' : (r.category ? r.category + ': ' : '')) + r.title;
+      %>
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Digital Archive</h1>
+        </div>
+      </div>
+
+      <%- include('partials/archive-tabs', { tab: 'requests' }) %>
+
+      <% if (done) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= done %></div><% } %>
+
+      <h2 class="rq-h">Board Resolutions &amp; Documents</h2>
+      <div class="card mb16">
+        <div class="ch"><h3><svg class="icon"><use href="#i-bell" xlink:href="#i-bell"/></svg> Waiting for your answer (<%= dWaiting.length %>)</h3></div>
+        <% if (!dWaiting.length) { %>
+          <div class="cb"><p class="muted fs13" style="margin:0">No requests are waiting.</p></div>
+        <% } %>
+        <% dWaiting.forEach(function (r) { %>
+          <div class="rq" id="doc-request-<%= r.request_id %>">
+            <div class="rq-main">
+              <div class="rq-who"><strong><%= r.full_name %></strong> <span class="muted fs12"><%= roleLabel(r) %> · <%= _fmt(r.created_at, true) %></span></div>
+              <div class="rq-what">asks to open <strong><%= _docName(r) %></strong></div>
+              <div class="muted fs12"><%= r.doc_type === 'Resolution' ? 'Board Resolution' : r.doc_type %><%= r.doc_year ? ' · ' + r.doc_year : '' %></div>
+              <div class="rq-why">“<%= r.reason %>”</div>
+              <a class="fs12" href="/archive/<%= r.document_id %>" target="_blank" rel="noopener">Look at the document first</a>
+            </div>
+            <form method="POST" class="rq-act">
+              <input name="note" maxlength="300" placeholder="Note to the member (optional)" aria-label="Note to the member">
+              <div class="rq-btns">
+                <button type="submit" formaction="/archive/doc-requests/<%= r.request_id %>/approve" class="btn btn-navy btn-sm">
+                  <svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Approve (<%= _span %>)
+                </button>
+                <button type="submit" formaction="/archive/doc-requests/<%= r.request_id %>/decline" class="btn btn-light btn-sm"
+                        onclick="return confirm('Decline this request?');">Decline</button>
+              </div>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+      <% if (dAnswered.length) { %>
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> Answered</h3></div>
+          <div class="tw"><table>
+            <thead><tr><th>Member</th><th>Document</th><th>Answer</th><th>By</th><th>Until</th></tr></thead>
+            <tbody>
+              <% dAnswered.forEach(function (r) { %>
+                <tr id="doc-request-<%= r.request_id %>">
+                  <td data-label="Member"><%= r.full_name %><div class="muted fs12"><%= roleLabel(r) %></div></td>
+                  <td data-label="Document"><%= _docName(r) %></td>
+                  <td data-label="Answer">
+                    <span class="badge <%= r.status === 'approved' ? 'b-green' : 'b-red' %>"><%= r.status === 'approved' ? 'Approved' : 'Declined' %></span>
+                    <% if (r.decision_note) { %><div class="muted fs12"><%= r.decision_note %></div><% } %>
+                  </td>
+                  <td data-label="By"><%= r.decided_by_name || '—' %><div class="muted fs12"><%= _fmt(r.decided_at, true) %></div></td>
+                  <td data-label="Until"><%= r.status === 'approved' ? _fmt(r.expires_at, true) : '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table></div>
+        </div>
+      <% } %>
+
+      <h2 class="rq-h">Meeting Agendas</h2>
+      <div class="card mb16">
+        <div class="ch"><h3><svg class="icon"><use href="#i-bell" xlink:href="#i-bell"/></svg> Waiting for your answer (<%= waiting.length %>)</h3></div>
+        <% if (!waiting.length) { %>
+          <div class="cb"><p class="muted fs13" style="margin:0">No requests are waiting.</p></div>
+        <% } %>
+        <% waiting.forEach(function (r) { %>
+          <div class="rq" id="request-<%= r.request_id %>">
+            <div class="rq-main">
+              <div class="rq-who"><strong><%= r.full_name %></strong> <span class="muted fs12"><%= roleLabel(r) %> · <%= _fmt(r.created_at, true) %></span></div>
+              <div class="rq-what">asks to view item <%= r.item_order %>: <strong><%= r.item_title %></strong></div>
+              <div class="muted fs12"><%= r.meeting_title %><%= r.meeting_number ? ' · No. ' + r.meeting_number : '' %><%= r.meeting_date ? ' · ' + _fmt(r.meeting_date) : '' %></div>
+              <div class="rq-why">“<%= r.reason %>”</div>
+              <a class="fs12" href="/meeting/<%= r.meeting_id %>/item/<%= r.item_id %>/review" target="_blank" rel="noopener">Look at the item first</a>
+            </div>
+            <form method="POST" class="rq-act">
+              <input name="note" maxlength="300" placeholder="Note to the member (optional)" aria-label="Note to the member">
+              <div class="rq-btns">
+                <button type="submit" formaction="/archive/requests/<%= r.request_id %>/approve" class="btn btn-navy btn-sm">
+                  <svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Approve (<%= accessDays %> day<%= accessDays === 1 ? '' : 's' %>)
+                </button>
+                <button type="submit" formaction="/archive/requests/<%= r.request_id %>/decline" class="btn btn-light btn-sm"
+                        onclick="return confirm('Decline this request?');">Decline</button>
+              </div>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> Answered</h3></div>
+        <% if (!answered.length) { %>
+          <div class="cb"><p class="muted fs13" style="margin:0">Nothing answered yet.</p></div>
+        <% } else { %>
+          <div class="tw"><table>
+            <thead><tr><th>Member</th><th>Agenda item</th><th>Answer</th><th>By</th><th>Until</th></tr></thead>
+            <tbody>
+              <% answered.forEach(function (r) { %>
+                <tr id="request-<%= r.request_id %>">
+                  <td data-label="Member"><%= r.full_name %><div class="muted fs12"><%= roleLabel(r) %></div></td>
+                  <td data-label="Agenda item"><%= r.item_order %>. <%= r.item_title %><div class="muted fs12"><%= r.meeting_title %><%= r.meeting_number ? ' · ' + r.meeting_number : '' %></div></td>
+                  <td data-label="Answer">
+                    <span class="badge <%= r.status === 'approved' ? 'b-green' : 'b-red' %>"><%= r.status === 'approved' ? 'Approved' : 'Declined' %></span>
+                    <% if (r.decision_note) { %><div class="muted fs12"><%= r.decision_note %></div><% } %>
+                  </td>
+                  <td data-label="By"><%= r.decided_by_name || '—' %><div class="muted fs12"><%= _fmt(r.decided_at, true) %></div></td>
+                  <td data-label="Until"><%= r.status === 'approved' ? _fmt(r.expires_at) : '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table></div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  .rq-h { font-size: 14px; color: #0d1f45; margin: 18px 0 8px; }
+  .rq { display: flex; gap: 16px; padding: 14px 18px; border-top: 1px solid #eef1f6; flex-wrap: wrap; }
+  .rq-main { flex: 1 1 320px; min-width: 0; font-size: 13px; line-height: 1.5; }
+  .rq-what { margin: 2px 0; }
+  .rq-why { margin: 6px 0; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #c8922a; border-radius: 4px; font-style: italic; }
+  .rq-act { flex: 0 1 300px; display: flex; flex-direction: column; gap: 8px; }
+  .rq-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</body></html>

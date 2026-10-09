@@ -1,0 +1,20 @@
+{
+ "name": "Sustained Traffic",
+ "durationSec": 1800.83,
+ "connections": 50,
+ "requests": 242673,
+ "avgLatencyMs": 370.41,
+ "p50": 236,
+ "p90": 844,
+ "p99": 1041,
+ "maxMs": 1450,
+ "throughputReqPerSec": 134.76,
+ "non2xx": 0,
+ "socketErrors": 0,
+ "errorRatePct": 0,
+ "statusCodes": {
+  "200": {
+   "count": 242673
+  }
+ }
+}

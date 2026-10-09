@@ -1,0 +1,26 @@
+(node:2329) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:2329) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+FAIL tests/05-ocr.test.js
+  extractMetadata
+    ✓ reads the resolution number, year and date (7 ms)
+    ✓ flags fields it could not find for manual review (3 ms)
+  extractResolutions / extractMeetingHeader
+    ✓ finds every resolution in one excerpt (4 ms)
+    ✓ reads the meeting header (2 ms)
+  extractText (Tesseract.js, offline language data)
+    ✕ reads the text of a PDF document (942 ms)
+
+  ● extractText (Tesseract.js, offline language data) › reads the text of a PDF document
+
+    Setting up fake worker failed: "A dynamic import callback was invoked without --experimental-vm-modules".
+
+      at globalThis (node_modules/pdf-parse/node_modules/pdfjs-dist/legacy/build/pdf.mjs:21358:14)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 4 passed, 5 total
+Snapshots:   0 total
+Time:        1.385 s, estimated 2 s
+Ran all test suites matching /tests\/05-ocr.test.js/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

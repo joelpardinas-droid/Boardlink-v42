@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Choose What to Back Up | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .ch-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .ch-tab { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: #334155;
+              font-size: 13px; font-weight: 600; cursor: pointer; }
+    .ch-tab .n { font-size: 11px; background: #eef1f6; color: #64748b; border-radius: 10px; padding: 0 7px; margin-left: 4px; }
+    .ch-tab.is-on { background: #0d1f45; color: #fff; border-color: #0d1f45; }
+    .ch-tab.is-on .n { background: rgba(255,255,255,.18); color: #fff; }
+    .ch-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .ch-filters select, .ch-filters input[type=search] { height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; font-size: 13px; background: #fff; }
+    .ch-filters input[type=search] { flex: 1 1 220px; min-width: 0; }
+    .ch-filters label { font-size: 12.5px; color: #475569; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .ch-list { list-style: none; margin: 0; padding: 0; }
+    .ch-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #f0f2f6; cursor: pointer; }
+    .ch-row:hover { background: #f8fafd; }
+    .ch-row input { width: 17px; height: 17px; flex: none; accent-color: #0d1f45; }
+    .ch-main { flex: 1; min-width: 0; }
+    .ch-title { font-size: 13.5px; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; }
+    .ch-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .ch-meet { background: #f6f8fc; font-weight: 700; }
+    .ch-meet .ch-title { font-weight: 700; }
+    .ch-item { padding-left: 44px; }
+    .ch-empty { padding: 26px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+    .ch-bar { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+              padding: 12px 16px; background: #fff; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; }
+    .ch-bar .ch-count { font-size: 13px; color: #334155; }
+    .ch-badge-in { background: #e7f6ee; color: #137a43; }
+    .ch-badge-no { background: #f1f3f7; color: #64748b; }
+    .ch-badge { font-size: 11.5px; font-weight: 600; border-radius: 20px; padding: 2px 9px; white-space: nowrap; flex: none; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Google Drive Backup'}) %>
+    <div class="page">
+      <%
+        const _day = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const _bodies = ['Board of Trustees', 'Academic Council', 'Administrative Council', 'RIC Council'];
+        // Agenda items grouped by meeting.
+        const _meetings = [];
+        (items || []).forEach(function (a) {
+          let m = _meetings[_meetings.length - 1];
+          if (!m || m.id !== a.meeting_id) { m = { id: a.meeting_id, a: a, items: [] }; _meetings.push(m); }
+          m.items.push(a);
+        });
+      %>
+      <div class="ph"><div>
+        <h1><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> Choose What to Back Up</h1>
+      </div>
+      <a href="/settings/drive" class="btn btn-light btn-sm">← Back</a></div>
+
+      <% if (done) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= done %></div><% } %>
+      <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+      <% if (dbDown) { %><div class="alert a-warn">The database cannot be reached.</div><% } %>
+
+      <div class="ch-tabs" role="tablist">
+        <button type="button" class="ch-tab <%= tab === 'docs' ? 'is-on' : '' %>" data-tab="docs" role="tab">Board Resolutions &amp; Documents <span class="n"><%= docs.length %></span></button>
+        <button type="button" class="ch-tab <%= tab === 'agendas' ? 'is-on' : '' %>" data-tab="agendas" role="tab">Meeting Agendas <span class="n"><%= items.length %></span></button>
+      </div>
+
+      <form action="/settings/drive/backup-selected" method="POST" class="card" id="chForm" style="padding:0">
+        <input type="hidden" name="tab" id="chTabField" value="<%= tab %>">
+        <div class="ch-filters">
+          <select id="chBody" aria-label="Board or council">
+            <option value="">All boards &amp; councils</option>
+            <% _bodies.forEach(function (b) { %><option value="<%= b %>"><%= b %></option><% }) %>
+          </select>
+          <input type="search" id="chSearch" placeholder="Search by title or number…" aria-label="Search">
+          <label><input type="checkbox" id="chNotYet"> Not yet in Drive only</label>
+          <label><input type="checkbox" id="chAll"> Select all shown</label>
+        </div>
+
+        <!-- Documents -->
+        <ul class="ch-list" data-pane="docs" <%= tab === 'docs' ? '' : 'hidden' %>>
+          <% if (!docs.length) { %><li class="ch-empty">No documents in the Digital Archive yet.</li><% } %>
+          <% docs.forEach(function (d) {
+               const isRes = d.doc_type === 'Resolution' || !d.doc_type;
+               const label = d.category ? (isRes ? 'Resolution No. ' + d.category : d.category) : (isRes ? 'Board Resolution' : d.doc_type); %>
+            <li>
+              <label class="ch-row" data-body="<%= d.governing_body %>" data-in="<%= d.drive_backup_at ? 1 : 0 %>"
+                     data-text="<%= (d.title + ' ' + (d.category || '') + ' ' + (d.doc_type || '') + ' ' + (d.doc_year || '')).toLowerCase() %>">
+                <input type="checkbox" name="doc" value="<%= d.document_id %>">
+                <span class="ch-main">
+                  <div class="ch-title"><%= d.title %></div>
+                  <div class="ch-sub"><%= label %> · <%= d.doc_year %> · <%= d.governing_body %></div>
+                </span>
+                <% if (d.drive_backup_at) { %><span class="ch-badge ch-badge-in">In Drive · <%= _day(d.drive_backup_at) %></span>
+                <% } else { %><span class="ch-badge ch-badge-no">Not yet</span><% } %>
+              </label>
+            </li>
+          <% }) %>
+          <li class="ch-empty" data-none hidden>Nothing matches.</li>
+        </ul>
+
+        <!-- Meeting agendas, grouped by meeting -->
+        <ul class="ch-list" data-pane="agendas" <%= tab === 'agendas' ? '' : 'hidden' %>>
+          <% if (!_meetings.length) { %><li class="ch-empty">No archived meeting agendas yet.</li><% } %>
+          <% _meetings.forEach(function (m) {
+               const body = m.a.meeting_type;
+               const text = ((m.a.meeting_number || '') + ' ' + (m.a.meeting_title || '')).toLowerCase(); %>
+            <li data-meeting="<%= m.id %>">
+              <label class="ch-row ch-meet" data-body="<%= body %>" data-text="<%= text %>">
+                <input type="checkbox" data-whole="<%= m.id %>" aria-label="Whole meeting">
+                <span class="ch-main">
+                  <div class="ch-title"><%= m.a.meeting_title %></div>
+                  <div class="ch-sub"><%= m.a.meeting_number ? m.a.meeting_number + ' · ' : '' %><%= _day(m.a.meeting_date) %> · <%= body %> · <%= m.items.length %> item<%= m.items.length === 1 ? '' : 's' %></div>
+                </span>
+              </label>
+              <ul class="ch-list">
+                <% m.items.forEach(function (it) { %>
+                  <li>
+                    <label class="ch-row ch-item" data-body="<%= body %>" data-in="<%= it.drive_backup_at ? 1 : 0 %>"
+                           data-text="<%= (text + ' ' + it.item_title).toLowerCase() %>">
+                      <input type="checkbox" name="item" value="<%= it.item_id %>" data-of="<%= m.id %>">
+                      <span class="ch-main">
+                        <div class="ch-title"><%= it.item_order %>. <%= it.item_title %></div>
+                        <div class="ch-sub"><%= it.is_video ? 'Video' : 'PDF' %></div>
+                      </span>
+                      <% if (it.drive_backup_at) { %><span class="ch-badge ch-badge-in">In Drive · <%= _day(it.drive_backup_at) %></span>
+                      <% } else { %><span class="ch-badge ch-badge-no">Not yet</span><% } %>
+                    </label>
+                  </li>
+                <% }) %>
+              </ul>
+            </li>
+          <% }) %>
+          <li class="ch-empty" data-none hidden>Nothing matches.</li>
+        </ul>
+
+        <div class="ch-bar">
+          <span class="ch-count" id="chCount">Nothing selected</span>
+          <button type="submit" class="btn btn-gold btn-sm" id="chGo" disabled>Back up selected</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('chForm');
+  var tabField = document.getElementById('chTabField');
+  var body = document.getElementById('chBody'), search = document.getElementById('chSearch');
+  var notYet = document.getElementById('chNotYet'), all = document.getElementById('chAll');
+  var count = document.getElementById('chCount'), go = document.getElementById('chGo');
+  var pane = function () { return form.querySelector('[data-pane="' + tabField.value + '"]'); };
+  var shown = function (el) { return !el.closest('li').hidden && !el.closest('[data-pane]').hidden; };
+
+  function filter() {
+    var b = body.value, q = search.value.trim().toLowerCase(), ny = notYet.checked;
+    form.querySelectorAll('[data-pane]').forEach(function (p) {
+      var any = false;
+      p.querySelectorAll('.ch-row[data-in]').forEach(function (row) {
+        var ok = (!b || row.dataset.body === b) && (!q || row.dataset.text.indexOf(q) >= 0) && (!ny || row.dataset.in === '0');
+        row.closest('li').hidden = !ok;
+        if (ok) any = true;
+      });
+      // A meeting is shown while at least one of its items is.
+      p.querySelectorAll('[data-meeting]').forEach(function (m) {
+        m.hidden = !Array.prototype.some.call(m.querySelectorAll('.ch-item'), function (r) { return !r.closest('li').hidden; });
+      });
+      var none = p.querySelector('[data-none]');
+      if (none) none.hidden = any || !p.querySelector('.ch-row[data-in]');
+    });
+    syncAll();
+  }
+
+  function update() {
+    var d = form.querySelectorAll('input[name=doc]:checked').length;
+    var i = form.querySelectorAll('input[name=item]:checked').length;
+    var parts = [];
+    if (d) parts.push(d + ' document' + (d === 1 ? '' : 's'));
+    if (i) parts.push(i + ' agenda item' + (i === 1 ? '' : 's'));
+    count.textContent = parts.length ? parts.join(' and ') + ' selected' : 'Nothing selected';
+    go.disabled = !(d + i);
+    go.textContent = (d + i) ? 'Back up selected (' + (d + i) + ')' : 'Back up selected';
+    form.querySelectorAll('[data-whole]').forEach(function (w) {
+      var kids = form.querySelectorAll('input[data-of="' + w.dataset.whole + '"]');
+      var on = Array.prototype.filter.call(kids, function (k) { return k.checked; }).length;
+      w.checked = on && on === kids.length;
+      w.indeterminate = on > 0 && on < kids.length;
+    });
+    syncAll();
+  }
+
+  function syncAll() {
+    var boxes = Array.prototype.filter.call(pane().querySelectorAll('input[name=doc], input[name=item]'), shown);
+    all.checked = boxes.length > 0 && boxes.every(function (x) { return x.checked; });
+  }
+
+  form.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.dataset.whole) {
+      form.querySelectorAll('input[data-of="' + t.dataset.whole + '"]').forEach(function (k) { if (shown(k)) k.checked = t.checked; });
+    }
+    update();
+  });
+  all.addEventListener('change', function () {
+    pane().querySelectorAll('input[name=doc], input[name=item]').forEach(function (x) { if (shown(x)) x.checked = all.checked; });
+    update();
+  });
+  [body, notYet].forEach(function (el) { el.addEventListener('change', filter); });
+  search.addEventListener('input', filter);
+  document.querySelectorAll('.ch-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabField.value = btn.dataset.tab;
+      document.querySelectorAll('.ch-tab').forEach(function (b) { b.classList.toggle('is-on', b === btn); });
+      form.querySelectorAll('[data-pane]').forEach(function (p) { p.hidden = p.dataset.pane !== btn.dataset.tab; });
+      syncAll();
+    });
+  });
+  // The filter/search fields are not part of what is sent.
+  [body, search, notYet, all].forEach(function (el) { el.removeAttribute('name'); });
+  filter(); update();
+})();
+</script>
+</body></html>

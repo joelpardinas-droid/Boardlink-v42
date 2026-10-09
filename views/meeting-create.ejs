@@ -1,0 +1,589 @@
+<%
+  // One form for creating and for editing a meeting.
+  const isEdit = typeof editing !== 'undefined' && !!editing;
+  const v = isEdit ? editing.meeting : ((typeof form !== 'undefined' && form) || {});
+  const ymd = d => {
+    if (!d) return '';
+    if (typeof d === 'string') return d.slice(0, 10);
+    const x = new Date(d);
+    return isNaN(x) ? '' : x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+  };
+  const hm = t => (t ? String(t).slice(0, 5) : '09:00');
+  const sel = (a, b) => (String(a ?? '') === String(b ?? '') ? 'selected' : '');
+  const CATS = ['Previous Minutes', 'For Information', 'For Approval', 'For Decision', 'For Discussion'];
+  const editItems = isEdit ? editing.items : [];
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= isEdit ? 'Edit Meeting' : 'Create Meeting' %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .agenda-row { display:grid; grid-template-columns: 30px 2fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center; }
+    .agenda-row input, .agenda-row select {
+      width:100%; padding:9px 11px; border:1.5px solid var(--line); border-radius:var(--r);
+      font-family:inherit; font-size:13px; color:var(--navy); background:var(--white); outline:none;
+    }
+    .agenda-row input:focus, .agenda-row select:focus { border-color:var(--blue); }
+    @media (max-width: 640px) {
+      .agenda-row { grid-template-columns: 26px 1fr auto; }
+      .agenda-row select { grid-column: 2; }
+      .item-extra { padding-left: 34px; }
+    }
+    .agenda-row .item-num { text-align:center; color:#64748b; font-weight:600; }
+    .add-item-btn { margin-top:6px; }
+    .row-tools { display:flex; align-items:center; gap:2px; }
+    .mv-item {
+      width:26px; height:26px; border:1px solid var(--line); border-radius:6px; background:var(--white);
+      color:#475569; cursor:pointer; font-size:13px; line-height:1; padding:0;
+    }
+    .mv-item:hover { border-color:var(--blue); color:var(--blue); }
+    .mv-item:disabled { opacity:.35; cursor:default; }
+    .item-cmts { font-size:11.5px; color:#1a3d80; background:#e7eefb; border-radius:10px; padding:1px 8px; }
+    .danger-zone { margin-top:22px; border:1px solid #f5c2c0; background:#fff8f7; border-radius:var(--r); padding:14px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .danger-zone p { margin:0; font-size:12.5px; color:#7f1d1d; max-width:60ch; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: isEdit ? 'Edit Meeting' : 'Create Meeting'}) %>
+    <div class="page">
+
+      <div class="ph">
+        <% if (isEdit) { %>
+          <div><h1><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> Edit Meeting</h1><p><%= v.meeting_number %>: <%= v.title %></p></div>
+          <a href="/meeting/<%= v.meeting_id %>" class="btn btn-light btn-sm"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Meeting</a>
+        <% } else { %>
+          <div><h1><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Create Meeting</h1></div>
+          <a href="/meeting" class="btn btn-light btn-sm"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Meetings</a>
+        <% } %>
+      </div>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert a-err" style="margin-bottom:14px"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div>
+      <% } %>
+
+      <form action="<%= isEdit ? '/meeting/' + v.meeting_id + '/edit' : '/meeting/create' %>" method="POST" enctype="multipart/form-data" id="meetingForm">
+
+        <!-- Section A: Meeting Identification -->
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg> A. Meeting Identification</h3></div>
+          <div class="cb">
+            <div class="fg">
+              <label>Meeting Title *</label>
+              <input type="text" name="title" required value="<%= v.title || '' %>"
+                     placeholder="e.g. 1st Regular Meeting of the Board of Trustees, AY 2026-2027">
+            </div>
+
+            <div class="row" style="display:grid; grid-template-columns: 1fr 1fr; gap:14px">
+              <div class="fg">
+                <label>Meeting Type *</label>
+                <% const typeLocked = isEdit && editing.typeLocked; %>
+                <select name="meeting_type" id="meetingType" required onchange="onTypeChange(true)" <%= typeLocked ? 'disabled' : '' %>>
+                  <option value="">— Select Type —</option>
+                  <option value="Board of Trustees" <%= sel(v.meeting_type, 'Board of Trustees') %>>Board of Trustees</option>
+                  <option value="Administrative Council" <%= sel(v.meeting_type, 'Administrative Council') %>>Administrative Council</option>
+                  <option value="Academic Council" <%= sel(v.meeting_type, 'Academic Council') %>>Academic Council</option>
+                  <option value="RIC Council" <%= sel(v.meeting_type, 'RIC Council') %>>Research, Innovation, and Commercialization (RIC) Council</option>
+                </select>
+                <% if (typeLocked) { %>
+                  <input type="hidden" name="meeting_type" value="<%= v.meeting_type %>">
+                  <p style="margin:4px 0 0;font-size:11.5px;color:#64748b">Cannot be changed now.</p>
+                <% } else if (isEdit) { %>
+                <% } %>
+              </div>
+              <div class="fg">
+                <label>Meeting Number *</label>
+                <input type="text" name="meeting_number" required value="<%= v.meeting_number || '' %>"
+                       placeholder="e.g. BOT-2026-001">
+              </div>
+            </div>
+
+            <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 2fr; gap:14px">
+              <div class="fg"><label for="meetingDate">Date *</label><input type="date" id="meetingDate" name="meeting_date" required value="<%= ymd(v.meeting_date) %>"></div>
+              <div class="fg"><label>Time *</label><input type="time" name="meeting_time" value="<%= hm(v.meeting_time) %>" required></div>
+              <div class="fg"><label>Venue *</label><input type="text" name="venue" required value="<%= v.venue || '' %>"
+                       placeholder="e.g. Board Room, CSPC Main Campus, Nabua"></div>
+            </div>
+
+            <!-- Filled in as 5 days before the meeting when a date is
+                 picked; the Secretary may still change it. -->
+            <div class="fg" style="max-width:360px">
+              <label for="commentDeadline">Pre-meeting Comment Deadline</label>
+              <input type="date" id="commentDeadline" name="comment_deadline" value="<%= ymd(v.comment_deadline) %>">
+              <p id="deadlineHint" style="margin:4px 0 0;color:#64748b;font-size:12px;line-height:1.45">
+              </p>
+            </div>
+
+            <div class="fg" style="max-width:300px">
+              <label>Mode</label>
+              <select name="mode">
+                <option value="In-Person" <%= sel(v.mode || 'In-Person', 'In-Person') %>>In-Person</option>
+                <option value="Virtual" <%= sel(v.mode, 'Virtual') %>>Virtual</option>
+                <option value="Hybrid" <%= sel(v.mode, 'Hybrid') %>>Hybrid</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section B: Initiation -->
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> B. Initiation</h3></div>
+          <div class="cb">
+            <div class="row" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px">
+              <div class="fg">
+                <label>Called by *</label>
+                <select name="called_by_user_id" required>
+                  <option value="">— Select user —</option>
+                  <% (users || []).forEach(u => { %>
+                    <option value="<%= u.user_id %>" <%= sel(v.called_by_user_id, u.user_id) %>><%= u.full_name %> (<%= roleLabel(u) %>)</option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Presided by *</label>
+                <select name="presided_by_user_id" required>
+                  <option value="">— Select user —</option>
+                  <% (users || []).forEach(u => { %>
+                    <option value="<%= u.user_id %>" <%= sel(v.presided_by_user_id, u.user_id) %>><%= u.full_name %> (<%= roleLabel(u) %>)</option>
+                  <% }) %>
+                </select>
+              </div>
+              <!-- Filled in from the meeting type; the Secretary may change it. -->
+              <div class="fg">
+                <label for="quorumField">Quorum needed *</label>
+                <input type="number" name="quorum_required" id="quorumField" min="1" max="200" required
+                       value="<%= v.quorum_required || 7 %>">
+                <p id="quorumHint" style="margin:4px 0 0;color:#64748b;font-size:12px;line-height:1.45"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section C: Agenda Items, each with an optional PDF -->
+        <div class="card mb16">
+          <div class="ch">
+            <h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> C. Agenda Items</h3>
+            <span class="fs12" style="color:#64748b">Add at least one</span>
+          </div>
+          <div class="cb">
+            <div id="agendaItems">
+              <!-- Each agenda item is ONE container holding its row and
+                   its description box. They were previously siblings,
+                   which made every selector that walked from a row to
+                   its textarea fragile. -->
+              <% editItems.forEach((it, idx) => { %>
+              <div class="agenda-item is-existing" data-comments="<%= it.commentCount %>">
+                <input type="hidden" name="item_id" value="<%= it.item_id %>">
+                <div class="agenda-row">
+                  <span class="item-num"><%= idx + 1 %>.</span>
+                  <input type="text" name="item_title" required value="<%= it.item_title %>" aria-label="Title of item <%= idx + 1 %>">
+                  <select name="item_category" aria-label="Category of item <%= idx + 1 %>">
+                    <% CATS.forEach(c => { %><option value="<%= c %>" <%= sel(it.item_category, c) %>><%= c %></option><% }) %>
+                  </select>
+                  <span class="row-tools">
+                    <button type="button" class="mv-item" data-dir="up" title="Move up" aria-label="Move item up">&#8593;</button>
+                    <button type="button" class="mv-item" data-dir="down" title="Move down" aria-label="Move item down">&#8595;</button>
+                    <button type="button" class="rm-item" title="Remove this item"
+                            style="background:transparent;border:none;color:#dc2626;cursor:pointer;font-size:16px">
+                      <svg class="icon"><use href="#i-x" xlink:href="#i-x"/></svg>
+                    </button>
+                  </span>
+                </div>
+                <div class="item-extra">
+                  <input type="hidden" name="item_key" value="e<%= it.item_id %>">
+                  <div class="item-file-pick">
+                    <label class="btn btn-light btn-sm item-file-btn">
+                      <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                      <span><%= it.item_pdf || it.item_video ? 'Replace file' : 'Attach PDF, Word or video' %></span>
+                      <input type="file" name="item_pdf__e<%= it.item_id %>" class="item-file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm">
+                    </label>
+                    <% if (it.missingFile) { %><span class="item-file-name is-bad"><%= it.item_title %> has been removed or deleted. Attach it again.</span><% } %>
+                    <% const _cur = it.item_video ? (it.item_video_name || 'Current video') : (it.item_pdf_name || (it.item_pdf ? 'Current PDF' : 'No file')); %>
+                    <span class="item-file-name <%= it.item_pdf || it.item_video ? 'has-file' : '' %>"
+                          data-current="<%= _cur %>"><%= _cur %></span>
+                    <button type="button" class="item-file-clear" hidden>Keep current</button>
+                    <% if (it.commentCount) { %>
+                      <span class="item-cmts"><%= it.commentCount %> comment<%= it.commentCount === 1 ? '' : 's' %></span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+              <% }) %>
+              <% if (!isEdit) { %>
+              <div class="agenda-item">
+                <input type="hidden" name="item_id" value="">
+              <div class="agenda-row">
+                <span class="item-num">1.</span>
+                <input type="text" name="item_title" placeholder="Item title (e.g. Approval of Minutes)">
+                <select name="item_category">
+                  <option value="Previous Minutes">Previous Minutes</option>
+                  <option value="For Information" selected>For Information</option>
+                  <option value="For Approval">For Approval</option>
+                  <option value="For Decision">For Decision</option>
+                  <option value="For Discussion">For Discussion</option>
+                </select>
+                <span class="row-tools">
+                <button type="button" class="mv-item" data-dir="up" title="Move up" aria-label="Move item up">&#8593;</button>
+                <button type="button" class="mv-item" data-dir="down" title="Move down" aria-label="Move item down">&#8595;</button>
+                <button type="button" class="rm-item" title="Remove this item"
+                        style="background:transparent;border:none;color:#dc2626;cursor:pointer;font-size:16px">
+                  <svg class="icon"><use href="#i-x" xlink:href="#i-x"/></svg>
+                </button>
+                </span>
+              </div>
+              <!-- The item's PDF -->
+              <div class="item-extra">
+                <input type="hidden" name="item_key" value="r1">
+                <div class="item-file-pick">
+                  <label class="btn btn-light btn-sm item-file-btn">
+                    <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                    <span>Attach PDF, Word or video</span>
+                    <input type="file" name="item_pdf__r1" class="item-file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm">
+                  </label>
+                  <span class="item-file-name">No file</span>
+                  <button type="button" class="item-file-clear" hidden>Remove</button>
+                </div>
+              </div>
+              </div>
+              <% } %>
+            </div>
+            <button type="button" class="btn btn-light btn-sm add-item-btn" onclick="addAgendaItem()">
+              <svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Add another agenda item
+            </button>
+          </div>
+        </div>
+
+        <!-- Section D: Notes -->
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> D. Notes for Members (Optional)</h3></div>
+          <div class="cb">
+            <div class="fg">
+              <label>Notes for Members</label>
+              <textarea name="notes_for_members" rows="3"
+                        placeholder="e.g. Please bring your printed copy of the Strategic Plan..."><%= v.notes_for_members || '' %></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="row" style="gap:10px">
+          <% if (isEdit) { %>
+            <button type="submit" class="btn btn-gold"><svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg> Save changes</button>
+            <a href="/meeting/<%= v.meeting_id %>" class="btn btn-light">Cancel</a>
+          <% } else { %>
+            <button type="submit" class="btn btn-gold"><svg class="icon"><use href="#i-mail" xlink:href="#i-mail"/></svg> Create &amp; Distribute Meeting</button>
+            <a href="/meeting" class="btn btn-light">Cancel</a>
+          <% } %>
+        </div>
+
+      </form>
+
+      <% if (isEdit) { %>
+        <div class="danger-zone">
+          <p><strong>Delete this meeting.</strong> Its agenda items, documents, comments, invitations and briefing are removed permanently.</p>
+          <a href="/meeting/<%= v.meeting_id %>/delete" class="btn btn-sm" style="background:#c0392b;color:#fff">Delete meeting…</a>
+        </div>
+      <% } %>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .item-extra { padding: 0 0 8px 38px; }
+  .item-file-pick { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px; }
+  .item-file-btn { position:relative; overflow:hidden; cursor:pointer; margin:0; }
+  /* The real file input covers the button, so it stays keyboard- and
+     screen-reader-reachable while looking like the other buttons. */
+  .item-file-btn input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; font-size:0; }
+  .item-file-btn:focus-within { box-shadow:0 0 0 3px rgba(26,61,128,.3); }
+  .item-file-name { font-size:12.5px; color:#64748b; word-break:break-all; }
+  .item-file-name.has-file { color:#0d1f45; font-weight:600; }
+  .item-file-name.is-bad { color:#c0392b; font-weight:600; }
+  .item-file-clear { background:none; border:0; color:#c0392b; font-size:12px; font-weight:600; cursor:pointer; padding:0; }
+</style>
+<script>
+  let agendaItemCount = 1;
+
+  /* Removal is handled by one delegated listener rather than an
+     inline onclick per row. Rows added later are covered automatically,
+     and the numbering is corrected after each removal so the list never
+     reads 1, 2, 4. The last remaining row is kept so the form is never
+     left with no item at all. */
+  (function () {
+    var container = document.getElementById('agendaItems');
+    if (!container) return;
+    container.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.rm-item') : null;
+      if (!btn || !container.contains(btn)) return;
+      var item = btn.closest('.agenda-item');
+      if (!item) return;
+      if (item.classList.contains('is-existing')) {
+        var n = Number(item.getAttribute('data-comments') || 0);
+        var title = (item.querySelector('input[name="item_title"]') || {}).value || 'this item';
+        var msg = 'Remove "' + title + '" from the agenda?' +
+          (n ? ' Its ' + n + ' comment' + (n === 1 ? '' : 's') + ' and its document will be deleted when you save.'
+             : ' Its document will be deleted when you save.');
+        if (!confirm(msg)) return;
+      }
+      var items = container.querySelectorAll('.agenda-item');
+      if (items.length <= 1) {
+        // Never leave the form without an agenda row.
+        if (item.classList.contains('is-existing')) {
+          addAgendaItem();
+          item.remove();
+        } else {
+          var t = item.querySelector('input[name="item_title"]');
+          if (t) t.value = '';
+          var f = item.querySelector('.item-file');
+          if (f) { f.value = ''; f.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
+      } else {
+        item.remove();
+      }
+      renumberAgendaItems();
+    });
+
+    // Move an item up or down.
+    container.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.mv-item') : null;
+      if (!btn || !container.contains(btn)) return;
+      var item = btn.closest('.agenda-item');
+      if (btn.getAttribute('data-dir') === 'up' && item.previousElementSibling) {
+        container.insertBefore(item, item.previousElementSibling);
+      } else if (btn.getAttribute('data-dir') === 'down' && item.nextElementSibling) {
+        container.insertBefore(item.nextElementSibling, item);
+      }
+      renumberAgendaItems();
+      btn.focus();
+    });
+  })();
+
+  /* Show the chosen file's name, refuse anything that is not a PDF,
+     and let the Secretary remove a wrong file. Delegated so rows
+     added later are covered. */
+  (function () {
+    var container = document.getElementById('agendaItems');
+    if (!container) return;
+    var maxMb = <%= Number(maxUploadMb) || 100 %>;
+    var maxVideoMb = <%= Number(process.env.MAX_VIDEO_UPLOAD_MB || 1024) %>;
+    container.addEventListener('change', function (e) {
+      var input = e.target;
+      if (!input.classList || !input.classList.contains('item-file')) return;
+      var pick  = input.closest('.item-file-pick');
+      var name  = pick.querySelector('.item-file-name');
+      var clear = pick.querySelector('.item-file-clear');
+      var file  = input.files && input.files[0];
+      name.classList.remove('has-file', 'is-bad');
+      var current = name.getAttribute('data-current');
+      if (!file) {
+        name.textContent = current || 'No file';
+        if (current && current !== 'No file') name.classList.add('has-file');
+        clear.hidden = true;
+        return;
+      }
+      var isPdf = /\.(pdf|docx)$/i.test(file.name) || file.type === 'application/pdf';
+      var isVideo = /^video\//.test(file.type) || /\.(mp4|mov|m4v|avi|mkv|webm)$/i.test(file.name);
+      if (!isPdf && !isVideo) {
+        input.value = '';
+        name.textContent = /\.doc$/i.test(file.name)
+          ? 'Old .doc files cannot be attached. In Word, use Save As and choose Word Document (.docx).'
+          : 'Only PDF, Word (.docx) or video files can be attached.';
+        name.classList.add('is-bad');
+        clear.hidden = true;
+        return;
+      }
+      var limit = isVideo ? maxVideoMb : maxMb;
+      if (file.size > limit * 1024 * 1024) {
+        input.value = '';
+        name.textContent = 'This file is larger than ' + (limit >= 1024 ? (limit / 1024) + ' GB' : limit + ' MB') + '.';
+        name.classList.add('is-bad');
+        clear.hidden = true;
+        return;
+      }
+      name.textContent = (isVideo ? 'Video: ' : '') + file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)' +
+        (current && current !== 'No file' ? ', replaces ' + current : '');
+      name.classList.add('has-file');
+      clear.hidden = false;
+    });
+    container.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.item-file-clear') : null;
+      if (!btn) return;
+      var input = btn.closest('.item-file-pick').querySelector('.item-file');
+      input.value = '';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  })();
+
+  function renumberAgendaItems() {
+    var container = document.getElementById('agendaItems');
+    if (!container) return;
+    var items = container.querySelectorAll('.agenda-item');
+    Array.prototype.forEach.call(items, function (el, i) {
+      var n = el.querySelector('.item-num');
+      if (n) n.textContent = (i + 1) + '.';
+      var up = el.querySelector('.mv-item[data-dir="up"]');
+      var dn = el.querySelector('.mv-item[data-dir="down"]');
+      if (up) up.disabled = i === 0;
+      if (dn) dn.disabled = i === items.length - 1;
+    });
+    agendaItemCount = items.length;
+  }
+
+  // Each row carries a unique key, so its PDF can be matched to it on
+  // the server even when other rows have no file.
+  var rowKeySeq = 1;
+  agendaItemCount = document.querySelectorAll('#agendaItems .agenda-item').length;
+  function addAgendaItem() {
+    agendaItemCount++;
+    const key = 'r' + (++rowKeySeq);
+    const container = document.getElementById('agendaItems');
+    const item = document.createElement('div');
+    item.className = 'agenda-item';
+    item.innerHTML = `
+      <input type="hidden" name="item_id" value="">
+      <div class="agenda-row">
+        <span class="item-num">${agendaItemCount}.</span>
+        <input type="text" name="item_title" placeholder="Item title">
+        <select name="item_category">
+          <option value="Previous Minutes">Previous Minutes</option>
+          <option value="For Information" selected>For Information</option>
+          <option value="For Approval">For Approval</option>
+          <option value="For Decision">For Decision</option>
+          <option value="For Discussion">For Discussion</option>
+        </select>
+        <span class="row-tools">
+          <button type="button" class="mv-item" data-dir="up" title="Move up" aria-label="Move item up">&#8593;</button>
+          <button type="button" class="mv-item" data-dir="down" title="Move down" aria-label="Move item down">&#8595;</button>
+          <button type="button" class="rm-item" title="Remove this item" style="background:transparent;border:none;color:#dc2626;cursor:pointer;font-size:16px"><svg class="icon"><use href="#i-x" xlink:href="#i-x"/></svg></button>
+        </span>
+      </div>
+      <div class="item-extra">
+        <input type="hidden" name="item_key" value="${key}">
+        <div class="item-file-pick">
+          <label class="btn btn-light btn-sm item-file-btn">
+            <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+            <span>Attach PDF, Word or video</span>
+            <input type="file" name="item_pdf__${key}" class="item-file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm">
+          </label>
+          <span class="item-file-name">No file</span>
+          <button type="button" class="item-file-clear" hidden>Remove</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(item);
+    renumberAgendaItems();
+    return item;
+  }
+
+  /* Quorum and membership per governing body, supplied by the server
+     from config/governance.js so the form and the database can never
+     disagree. The four bodies differ widely — the Academic Council
+     has 72 members needing 37, while the Board of Trustees has 11
+     needing 7 — so a single hard-coded default was wrong for every
+     body except by accident. */
+  const GOVERNING_BODIES = <%- JSON.stringify(governingBodies || []) %>;
+
+  function onTypeChange(userChanged) {
+    const type    = document.getElementById('meetingType').value;
+    const q       = document.getElementById('quorumField');
+    const hint    = document.getElementById('quorumHint');
+
+    const body = GOVERNING_BODIES.find(b => b.name === type);
+    if (body) {
+      if (userChanged || !q.value) q.value = body.quorum;
+      if (hint) {
+        hint.textContent =
+          body.quorum + ' of ' + body.members + ' members required for this body.';
+      }
+    } else if (hint) {
+      hint.textContent = '';
+    }
+  }
+
+  // Apply the correct quorum on first load too, not only on change.
+  document.addEventListener('DOMContentLoaded', function () { onTypeChange(false); renumberAgendaItems(); });
+
+  /* Pre-meeting comment deadline: 5 days before the meeting.
+     Picking or changing the meeting date fills it in. Once the
+     Secretary edits the deadline herself, later date changes leave
+     her choice alone, and a link puts the automatic date back. */
+  (function () {
+    var LEAD_DAYS = 5;
+    var dateEl = document.getElementById('meetingDate');
+    var dlEl   = document.getElementById('commentDeadline');
+    var hint   = document.getElementById('deadlineHint');
+    if (!dateEl || !dlEl) return;
+    var manual = false;
+
+    function ymd(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function today() { return ymd(new Date()); }
+    function minusDays(value, days) {
+      var p = value.split('-').map(Number);
+      return ymd(new Date(p[0], p[1] - 1, p[2] - days));
+    }
+    function say(text, withReset) {
+      hint.textContent = text;
+      if (withReset) {
+        var a = document.createElement('button');
+        a.type = 'button';
+        a.textContent = 'Use 5 days before';
+        a.style.cssText = 'background:none;border:0;padding:0;margin-left:6px;color:#1a3d80;font-weight:600;cursor:pointer;font-size:12px';
+        a.addEventListener('click', function () { manual = false; fill(); dlEl.focus(); });
+        hint.appendChild(a);
+      }
+    }
+    function fill() {
+      var meeting = dateEl.value;
+      dlEl.max = meeting || '';
+      if (!meeting) {
+        if (!manual) dlEl.value = '';
+        say('Set automatically to 5 days before the meeting once you pick a date.');
+        return;
+      }
+      if (manual) {
+        if (dlEl.value && dlEl.value > meeting) {
+          say('The deadline is after the meeting date. Choose an earlier date.', true);
+        } else {
+          say('Changed by you.', true);
+        }
+        return;
+      }
+      var auto = autoFor(meeting);
+      dlEl.value = auto;
+      if (auto !== minusDays(meeting, LEAD_DAYS)) {
+        say('The meeting is less than 5 days away, so the deadline is set to today. You can change it.');
+      } else {
+        say('5 days before the meeting. You can change it.');
+      }
+    }
+    // 5 days before the meeting, but not before today when the
+    // meeting is sooner than that (same rule as the server).
+    function autoFor(meeting) {
+      var auto = minusDays(meeting, LEAD_DAYS);
+      return (auto < today() && meeting >= today()) ? today() : auto;
+    }
+
+    // Editing: a saved deadline that differs from the rule was chosen
+    // by the Secretary, so keep it.
+    if (dlEl.value && dateEl.value && dlEl.value !== autoFor(dateEl.value)) manual = true;
+    dateEl.addEventListener('change', fill);
+    dateEl.addEventListener('input', fill);
+    dlEl.addEventListener('change', function () {
+      // Only a date different from the automatic one counts as the
+      // Secretary's own choice.
+      manual = !!dlEl.value && !(dateEl.value && dlEl.value === autoFor(dateEl.value));
+      fill();
+    });
+    fill();
+  })();
+</script>
+
+</body></html>

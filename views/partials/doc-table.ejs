@@ -1,0 +1,86 @@
+<%
+  // A table of archived documents (v87: used by the year folder, the
+  // other documents and the search results of the Digital Archive).
+  //   list, member, focus, emptyText
+  const _member = member;
+  const _focus = focus;
+  const _when = d => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' }) : '';
+%>
+<div class="tw">
+  <table>
+    <thead>
+      <tr><th>#</th><th>No.</th><th>Title</th><th>Year</th><th>Type</th><th><%= _member ? 'Access' : 'Status' %></th><th></th></tr>
+    </thead>
+    <tbody>
+      <% if (!list.length) { %>
+        <tr><td colspan="7"><div class="empty" style="padding:30px 18px"><p class="muted fs13" style="margin:0"><%- emptyText %></p></div></td></tr>
+      <% } %>
+                <% list.forEach((d, idx) => {
+                     const _id = d.document_id || d.id;
+                     const a = d.access || { state: 'open', office: true }; %>
+                  <tr id="doc-<%= _id %>" class="<%= _focus === Number(_id) ? 'is-focus' : '' %>">
+                    <td class="muted" data-label="#"><%= idx + 1 %></td>
+                    <td class="fw7" data-label="No." style="white-space:nowrap"><%= d.category || '—' %></td>
+                    <td data-label="Title">
+                      <%= d.title %>
+                      <%# v87: the approved document(s) of a resolution / the resolution that approved it %>
+                      <% (d.attached || []).forEach(function (x) {
+                           const xo = !_member || (x.access && x.access.state === 'open');
+                           const isAg = x.kind === 'agenda';
+                           const url = isAg ? '/meeting/' + x.meeting_id + '/item/' + x.item_id + '/review' : '/archive/' + x.document_id; %>
+                        <div class="att-line"><svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                          <span><%= isAg ? 'Agenda item' : 'Approved document' %>: <strong><%= x.title %></strong>
+                            <span class="muted">(<%= isAg ? (x.meeting_title || x.meeting_type) : (x.kind === 'pages' ? (x.page_from === x.page_to ? 'page ' + x.page_from : 'pages ' + x.page_from + '–' + x.page_to) : x.doc_type) %>)</span></span>
+                          <% if (xo) { %><a href="<%= url %>" class="att-link">View</a><% } %>
+                        </div>
+                      <% }) %>
+                      <% (d.approvedBy || []).forEach(function (x) { const xo = !_member || (x.access && x.access.state === 'open'); %>
+                        <div class="att-line"><svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                          <span>Approved by <strong>Resolution No. <%= x.category || '—' %></strong> <span class="muted">(<%= x.doc_year %>)</span></span>
+                          <% if (xo) { %><a href="/archive/<%= x.document_id %>" class="att-link">View</a><% } %>
+                        </div>
+                      <% }) %>
+                      <% if (d.snippet && !_member) { %>
+                        <div class="muted fs12" style="margin-top:3px;line-height:1.45">
+                          <%= d.snippet %>
+                        </div>
+                      <% } %>
+                      <% if (_member && ['locked', 'declined', 'expired'].includes(a.state)) { %>
+                        <details class="dr-req" <%= _focus === Number(_id) ? 'open' : '' %>>
+                          <summary class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-lock" xlink:href="#i-lock"/></svg> <%= a.state === 'locked' ? 'Request access' : 'Ask again' %></summary>
+                          <form action="/archive/<%= _id %>/request" method="POST">
+                            <label for="why<%= _id %>">Why do you need to open this document?</label>
+                            <textarea id="why<%= _id %>" name="reason" maxlength="500" required minlength="5"
+                                      placeholder="e.g. For reference in the Academic Council's review of the BSIT curriculum"></textarea>
+                            <button type="submit" class="btn btn-navy btn-sm">Send request</button>
+                          </form>
+                        </details>
+                      <% } %>
+                    </td>
+                    <td data-label="Year"><%= d.doc_year %></td>
+                    <td data-label="Type"><%= d.doc_type === 'Resolution' ? 'Board Resolution' : (d.doc_type || '—') %></td>
+                    <td data-label="<%= _member ? 'Access' : 'Status' %>">
+                      <% if (!_member) { %>
+                        <span class="badge b-green">Digitized</span>
+                      <% } else if (a.state === 'open') { %>
+                        <span class="badge b-green">Approved</span><div class="muted fs12">until <%= _when(a.until) %></div>
+                      <% } else if (a.state === 'pending') { %>
+                        <span class="badge b-orange">Waiting</span><div class="muted fs12">sent <%= _when(a.request.created_at) %></div>
+                      <% } else if (a.state === 'declined') { %>
+                        <span class="badge b-red">Declined</span><% if (a.request.decision_note) { %><div class="muted fs12"><%= a.request.decision_note %></div><% } %>
+                      <% } else if (a.state === 'expired') { %>
+                        <span class="badge b-blue">Ended</span><div class="muted fs12"><%= _when(a.request.expires_at) %></div>
+                      <% } else { %>
+                        <span class="badge b-blue"><svg class="icon icon-sm"><use href="#i-lock" xlink:href="#i-lock"/></svg> Closed</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (a.state === 'open') { %>
+                        <a href="/archive/<%= _id %>" class="btn btn-light btn-sm">View</a>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+    </tbody>
+  </table>
+</div>

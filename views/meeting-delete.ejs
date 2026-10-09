@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Delete Meeting | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .del-card { max-width: 640px; }
+    .del-list { margin: 10px 0 16px; padding-left: 18px; font-size: 13.5px; line-height: 1.7; color: #1e293b; }
+    .del-confirm label { font-size: 13px; }
+    .del-confirm code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+    .btn-danger { background: #c0392b; color: #fff; }
+    .btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Delete Meeting'}) %>
+    <div class="page">
+      <div class="ph">
+        <div><h1>Delete meeting</h1><p><%= meeting.meeting_number %>: <%= meeting.title %></p></div>
+        <a href="/meeting/<%= meeting.meeting_id %>" class="btn btn-light btn-sm"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Meeting</a>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert a-err" style="margin-bottom:14px"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div>
+      <% } %>
+
+      <div class="card del-card">
+        <div class="cb">
+            <p style="font-size:14px;margin:0">Deleting this meeting permanently removes:</p>
+            <% if (footprint) { %>
+              <ul class="del-list">
+                <li><%= footprint.items %> agenda item<%= footprint.items === 1 ? '' : 's' %><% if (footprint.files) { %> and <%= footprint.files %> attached PDF<%= footprint.files === 1 ? '' : 's' %><% } %></li>
+                <li><%= footprint.comments %> member comment<%= footprint.comments === 1 ? '' : 's' %></li>
+                <li>The AI pre-meeting briefing</li>
+              </ul>
+            <% } %>
+            <% if (meeting.status === 'Completed' || meeting.status === 'In-Session') { %>
+              <div class="alert a-warn" style="margin-bottom:14px;font-size:12.5px">
+                <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+                This meeting is <%= meeting.status === 'Completed' ? 'already completed' : 'in session' %>. Its record will be lost.
+              </div>
+            <% } %>
+            <form method="POST" action="/meeting/<%= meeting.meeting_id %>/delete" class="del-confirm" data-no-spinner>
+              <div class="fg">
+                <label for="confirmNumber">To confirm, type the meeting number <code><%= meeting.meeting_number %></code></label>
+                <input type="text" id="confirmNumber" name="confirm_number" autocomplete="off" required
+                       data-expected="<%= String(meeting.meeting_number).trim().toLowerCase() %>">
+              </div>
+              <div class="row" style="gap:10px">
+                <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>Delete permanently</button>
+                <a href="/meeting/<%= meeting.meeting_id %>" class="btn btn-light">Cancel</a>
+              </div>
+            </form>
+            <script>
+              (function () {
+                var input = document.getElementById('confirmNumber');
+                var btn = document.getElementById('deleteBtn');
+                input.addEventListener('input', function () {
+                  btn.disabled = input.value.trim().toLowerCase() !== input.getAttribute('data-expected');
+                });
+              })();
+            </script>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,20 @@
+{
+ "name": "Document Retrieval Load",
+ "durationSec": 30.08,
+ "connections": 100,
+ "requests": 5581,
+ "avgLatencyMs": 534.43,
+ "p50": 546,
+ "p90": 662,
+ "p99": 787,
+ "maxMs": 1102,
+ "throughputReqPerSec": 185.54,
+ "non2xx": 0,
+ "socketErrors": 0,
+ "errorRatePct": 0,
+ "statusCodes": {
+  "200": {
+   "count": 5581
+  }
+ }
+}

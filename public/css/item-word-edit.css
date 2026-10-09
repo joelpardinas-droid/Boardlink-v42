@@ -1,0 +1,202 @@
+/* ============================================================
+   item-word-edit.css — the Board Secretary corrects the wording
+   ============================================================
+   The document's paragraphs on the left, the members' comments on
+   the right, so she can see what the Board asked about while she
+   changes the words.                                            */
+
+.we-page { padding-bottom: 28px; }
+
+/* The hidden attribute is how this page shows and hides its buttons and
+   messages, but a class that sets `display` (.btn is inline-flex) beats
+   it — so "Undo my changes" showed with nothing to undo. This puts the
+   attribute back in charge for everything on the page. */
+.we-page [hidden] { display: none !important; }
+.we-ph { flex-wrap: wrap; gap: 10px; }
+.we-alert { margin-bottom: 14px; }
+.we-alert a { color: inherit; text-decoration: underline; }
+
+/* ── the bar that stays in view ───────────────────────────── */
+
+.we-bar {
+  position: sticky; top: 60px; z-index: 5;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 12px;
+  background: var(--white); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .06);
+}
+.we-spacer { flex: 1 1 auto; min-width: 0; }
+.we-status { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+.we-changed {
+  font-size: 11.5px; font-weight: 700; color: #7a4b00;
+  background: #fff1d6; border-radius: 10px; padding: 2px 9px;
+}
+.we-spin {
+  width: 13px; height: 13px; flex: none; display: inline-block;
+  border: 2px solid var(--line); border-top-color: var(--blue);
+  border-radius: 50%; animation: we-turn .8s linear infinite;
+}
+@keyframes we-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .we-spin { animation-duration: 2.4s; } }
+
+/* ── the two columns ─────────────────────────────────────── */
+
+.we-split {
+  display: grid; gap: 14px; align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+}
+.we-doc, .we-side { min-width: 0; }
+.we-hint {
+  font-size: 12.5px; color: var(--dark); line-height: 1.6;
+  background: #f7f9fc; border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 11px; margin-bottom: 10px;
+}
+
+/* ── the editable paragraphs ─────────────────────────────── */
+
+.we-blocks {
+  background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 16px;
+}
+.we-loading { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; margin: 0; }
+
+.we-row { position: relative; display: flex; gap: 8px; align-items: flex-start; margin-bottom: 2px; }
+.we-box {
+  flex: 1 1 auto; min-width: 0;
+  font: 14px/1.7 Georgia, "Times New Roman", serif;
+  color: var(--dark); white-space: pre-wrap; word-break: break-word;
+  padding: 5px 8px; border: 1px solid transparent; border-radius: 6px;
+  outline: none; cursor: text;
+}
+.we-box:hover { border-color: #e3e8ef; background: #fcfdff; }
+.we-box:focus { border-color: var(--blue); background: var(--white); box-shadow: 0 0 0 3px rgba(26, 61, 128, .12); }
+.we-row.is-changed .we-box { background: #fffdf3; border-color: #e6c67a; }
+.we-row.is-pointed .we-box { border-color: #e6a417; box-shadow: 0 0 0 3px rgba(230, 164, 23, .18); }
+.we-row.has-comment .we-box { border-left: 3px solid #ffd980; }
+
+.we-row-flag {
+  flex: none; align-self: flex-start; margin-top: 8px;
+  font-size: 10.5px; font-weight: 700; color: #7a4b00;
+  background: #fff1d6; border-radius: 9px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* ── the comments beside the document ────────────────────── */
+
+.we-side {
+  position: sticky; top: 118px;
+  background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+  max-height: calc(100vh - 150px); display: flex; flex-direction: column;
+}
+.we-side-head { padding: 12px 13px 10px; border-bottom: 1px solid var(--line); }
+.we-side-head h2 {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14px; margin: 0 0 6px; color: var(--navy);
+}
+.we-side-head p { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 0; }
+.we-count {
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  background: #eef3fc; border-radius: 9px; padding: 1px 7px;
+}
+.we-comments { overflow-y: auto; padding: 4px 0; }
+
+.we-c {
+  padding: 10px 13px; border-top: 1px solid #f1f4f9;
+  border-left: 3px solid transparent; cursor: default;
+}
+.we-c:first-child { border-top: 0; }
+.we-c.is-linked { cursor: pointer; }
+.we-c.is-linked:hover { background: #fafbfd; }
+.we-c.is-active { background: #f1f5fd; border-left-color: var(--blue); }
+.we-c.is-touched { border-left-color: #e6a417; }
+.we-c.is-gone { border-left-color: var(--red); background: #fffafa; }
+
+.we-c-top { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+.we-c-page {
+  font-size: 10.5px; font-weight: 700; color: #7a4b00;
+  background: #fff1d6; border-radius: 4px; padding: 1px 6px;
+}
+.we-c-area { font-size: 11px; color: var(--muted); }
+.we-c-flag {
+  font-size: 10.5px; font-weight: 700; color: #7a4b00;
+  background: #fff8e8; border: 1px solid #e6c67a; border-radius: 4px; padding: 0 5px;
+}
+.we-c-quote {
+  font: italic 12px/1.5 Georgia, serif; color: var(--dark); margin: 0 0 5px;
+  padding-left: 7px; border-left: 2px solid #ffd980;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.we-c-text { font-size: 12.5px; color: var(--dark); line-height: 1.55; margin: 0 0 5px; word-break: break-word; }
+.we-c-who { font-size: 11.5px; color: var(--navy); font-weight: 600; margin: 0; }
+.we-c-who span { color: var(--muted); font-weight: 400; }
+.we-c-where {
+  font-size: 11.5px; line-height: 1.5; margin: 6px 0 0;
+  padding: 5px 7px; border-radius: 6px; background: #fff8e8; color: #7a4b00;
+}
+.we-c.is-gone .we-c-where { background: #fdeaea; color: var(--red); }
+.we-c-none { font-size: 12.5px; color: var(--muted); padding: 12px 13px; margin: 0; }
+
+/* ── Microsoft Word, and the version list ────────────────── */
+
+.we-word, .we-versions { margin-top: 16px; max-width: 860px; }
+.we-word > summary {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 12px 14px; font-weight: 600; font-size: 13.5px; color: var(--navy);
+}
+.we-word > summary::-webkit-details-marker { display: none; }
+.we-word[open] > summary { border-bottom: 1px solid var(--line); }
+.we-word .cb p { font-size: 13px; color: var(--dark); line-height: 1.6; margin: 0 0 10px; }
+.we-word-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.we-word-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0; }
+.we-add { position: relative; overflow: hidden; cursor: pointer; }
+.we-add input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.we-add:focus-within { box-shadow: 0 0 0 3px rgba(26, 61, 128, .3); }
+#weFileLabel { max-width: 20ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.we-note { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+
+.we-versions ul { list-style: none; margin: 0; padding: 0; }
+.we-versions li {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline;
+  padding: 7px 0; border-top: 1px solid #f1f5f9; font-size: 13px; color: var(--dark);
+}
+.we-versions li:first-child { border-top: 0; }
+.we-versions a { color: var(--blue); font-weight: 600; }
+.we-versions .we-when { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+/* ── narrow screens ──────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .we-split { grid-template-columns: minmax(0, 1fr); }
+  .we-side { position: static; max-height: none; order: -1; }
+  .we-comments { max-height: 260px; }
+  .we-bar { top: 52px; }
+}
+
+/* ── when the two programs are not installed yet ──────────── */
+
+.we-setup { max-width: 860px; margin-bottom: 16px; border-left: 4px solid #e6a417; }
+.we-setup h2 {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 15px; color: var(--navy); margin: 0 0 8px;
+}
+.we-setup h2 .icon { flex: none; margin-top: 2px; color: #e6a417; }
+.we-setup p { font-size: 13px; color: var(--dark); line-height: 1.6; margin: 0 0 10px; }
+.we-setup-steps { margin: 0 0 12px; padding-left: 20px; }
+.we-setup-steps li { font-size: 13px; color: var(--dark); line-height: 1.6; margin-bottom: 7px; }
+.we-setup-cmd { margin: 0 0 12px; }
+.we-setup-cmd code, .we-setup code {
+  font: 12.5px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: #f3f5f9; border: 1px solid var(--line); border-radius: 5px; padding: 2px 7px;
+  color: var(--navy); word-break: break-all;
+}
+.we-setup-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.we-setup-again {
+  font-size: 12.5px; line-height: 1.6; color: #7a4b00;
+  background: #fff8e8; border-radius: 8px; padding: 8px 10px; margin: 0 0 10px;
+}
+
+/* "Attached as a PDF" notice: why the words cannot be edited, and what to do. */
+.we-needs-word {
+  display: flex; gap: 10px; align-items: flex-start; line-height: 1.55; font-weight: 400;
+  background: #eef4ff; color: var(--navy); border: 1px solid #c9d8f5;
+}
+.we-needs-word .icon { flex: 0 0 auto; margin-top: 2px; color: var(--blue); }

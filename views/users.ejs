@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>User Management | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'User Management'}) %>
+    <div class="page">
+      <div class="ph">
+        <div><h1><svg class="icon"><use href="#i-users" xlink:href="#i-users"/></svg> User Management</h1></div>
+        <div class="row" style="gap:8px">
+        <a href="/users/logs" class="btn btn-light"><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> User Account Logs</a>
+        <a href="/users/add" class="btn btn-gold"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Add User</a>
+        </div>
+      </div>
+
+      <% if (done) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= done %></div><% } %>
+      <% if (dbDown) { %><div class="alert a-warn">The database cannot be reached, so the accounts cannot be shown.</div><% } %>
+      <%
+        const _date = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        const _typeLabel = key => { const t = types.find(x => x.key === key); return t ? t.label : '—'; };
+      %>
+
+      <div class="card mb16" id="pending">
+        <div class="ch"><h3><svg class="icon"><use href="#i-user-plus" xlink:href="#i-user-plus"/></svg> Waiting for approval
+          <span class="badge <%= pending.length ? 'b-orange' : 'b-blue' %>" style="margin-left:6px"><%= pending.length %></span></h3></div>
+        <% if (!pending.length) { %>
+          <div class="cb muted fs13">No sign-ups are waiting.</div>
+        <% } else { %>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Name</th><th>Gmail</th><th>Asked to join as</th><th>Signed up</th><th>Approve as</th><th></th></tr></thead>
+            <tbody>
+              <% pending.forEach(function (u) { %>
+                <tr>
+                  <td class="fw7" data-label="Name"><%= u.full_name %></td>
+                  <td class="muted" data-label="Gmail"><%= u.email %><%= u.google_sub ? ' (Google)' : '' %></td>
+                  <td data-label="Asked to join as"><%= _typeLabel(u.requested_type) %></td>
+                  <td class="muted" data-label="Signed up"><%= _date(u.created_at) %></td>
+                  <td data-label="Approve as" colspan="2">
+                    <div class="row" style="gap:8px;flex-wrap:wrap">
+                      <form action="/users/<%= u.user_id %>/approve" method="POST" class="row" style="gap:6px;margin:0">
+                        <input type="hidden" name="from" value="list">
+                        <select name="accountType" aria-label="Account type for <%= u.full_name %>" style="min-width:170px">
+                          <% types.filter(t => t.key !== 'admin').forEach(function (t) { %>
+                            <option value="<%= t.key %>" <%= t.key === u.requested_type ? 'selected' : '' %>><%= t.label %></option>
+                          <% }) %>
+                        </select>
+                        <button class="btn btn-gold btn-sm" type="submit"><svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Approve</button>
+                      </form>
+                      <form action="/users/<%= u.user_id %>/reject" method="POST" style="margin:0"
+                            onsubmit="return confirm('Turn down and remove the sign-up of <%= u.full_name.replace(/'/g, '') %>?');">
+                        <button class="btn btn-light btn-sm" type="submit">Turn down</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+      <div class="card mb16">
+        <div class="ch"><h3><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> Active accounts
+          <span class="badge b-green" style="margin-left:6px"><%= current.length %></span></h3></div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Gmail (sign-in)</th><th>Account type</th><th></th></tr></thead>
+            <tbody>
+              <% if (!current.length) { %><tr><td colspan="5" class="muted" style="padding:18px">No active accounts.</td></tr><% } %>
+              <% current.forEach(function (u) { %>
+                <tr>
+                  <td class="muted" data-label="#"><%= u.user_id %></td>
+                  <td class="fw7" data-label="Name"><%= u.full_name %></td>
+                  <td class="muted" data-label="Gmail (sign-in)"><%= u.email %></td>
+                  <td data-label="Account type"><span class="badge b-blue"><%= roleLabel(u) %></span></td>
+                  <td><a href="/users/<%= u.user_id %>" class="btn btn-light btn-sm">Manage</a></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3><svg class="icon"><use href="#i-x-circle" xlink:href="#i-x-circle"/></svg> Removed accounts (retired, term ended, resigned)
+          <span class="badge b-red" style="margin-left:6px"><%= removed.length %></span></h3></div>
+        <% if (!removed.length) { %>
+          <div class="cb muted fs13">No one has been removed.</div>
+        <% } else { %>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Name</th><th>Was</th><th>Removed on</th><th>Reason</th><th></th></tr></thead>
+            <tbody>
+              <% removed.forEach(function (u) { %>
+                <tr>
+                  <td class="fw7" data-label="Name"><%= u.full_name %></td>
+                  <td data-label="Was"><%= u.retired_from || roleLabel(u) %></td>
+                  <td class="muted" data-label="Removed on"><%= _date(u.retired_at) %></td>
+                  <td class="muted" data-label="Reason"><%= u.retired_note || '—' %></td>
+                  <td><a href="/users/<%= u.user_id %>" class="btn btn-light btn-sm">Manage</a></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,282 @@
+  console.log
+      ✅  MySQL connection pool ready
+
+      at log (config/db.js:33:17)
+
+FAIL tests/02-digital-archiving.test.js
+  Document model
+    ✓ findAll returns the archived resolutions (53 ms)
+    ✓ findById returns one resolution with its metadata (3 ms)
+    ✓ findById returns nothing for an id that does not exist (3 ms)
+  Archive routes
+    ✓ the Board Secretary can list the archive (589 ms)
+    ✓ the Board Secretary can open the upload page (536 ms)
+    ✓ a Trustee cannot open the upload page (511 ms)
+    ✕ a single archived document opens by id (441 ms)
+
+  ● Archive routes › a single archived document opens by id
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Tuition Fee"
+    Received string:    "<!DOCTYPE html>
+    <html lang=\"en\">
+    <head>
+      <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+      <title>Document View | BOARDLINK</title>
+      <link rel=\"stylesheet\" href=\"/css/style.css\">
+    </head>
+    <body>
+    <div class=\"app\">···
+    <svg style=\"display:none\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">
+      <symbol id=\"i-menu\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"/></symbol>
+      <symbol id=\"i-x\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></symbol>
+      <symbol id=\"i-home\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 11l9-8 9 8\"/><path d=\"M5 10v10h14V10\"/></symbol>
+      <symbol id=\"i-folder\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6z\"/></symbol>
+      <symbol id=\"i-file\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 2h9l5 5v15H6z\"/><path d=\"M15 2v5h5\"/></symbol>
+      <symbol id=\"i-search\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></symbol>
+      <symbol id=\"i-users\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></symbol>
+      <symbol id=\"i-lock\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"10\" width=\"16\" height=\"11\" rx=\"2\"/><path d=\"M8 10V7a4 4 0 0 1 8 0v3\"/></symbol>
+      <symbol id=\"i-calendar\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><line x1=\"16\" y1=\"3\" x2=\"16\" y2=\"7\"/><line x1=\"8\" y1=\"3\" x2=\"8\" y2=\"7\"/><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"/></symbol>
+      <symbol id=\"i-mic\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M5 10a7 7 0 0 0 14 0\"/><line x1=\"12\" y1=\"19\" x2=\"12\" y2=\"22\"/></symbol>
+      <symbol id=\"i-scan\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"/><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"/><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"/><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/></symbol>
+      <symbol id=\"i-clipboard\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"6\" y=\"4\" width=\"12\" height=\"17\" rx=\"2\"/><rect x=\"9\" y=\"2\" width=\"6\" height=\"4\" rx=\"1\"/></symbol>
+      <symbol id=\"i-logout\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><polyline points=\"16 17 21 12 16 7\"/><line x1=\"21\" y1=\"12\" x2=\"9\" y2=\"12\"/></symbol>
+      <symbol id=\"i-plus\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/></symbol>
+      <symbol id=\"i-arrow-left\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"19\" y1=\"12\" x2=\"5\" y2=\"12\"/><polyline points=\"12 19 5 12 12 5\"/></symbol>
+      <symbol id=\"i-arrow-right\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/><polyline points=\"12 5 19 12 12 19\"/></symbol>
+      <symbol id=\"i-download\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></symbol>
+      <symbol id=\"i-upload\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></symbol>
+      <symbol id=\"i-bell\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9\"/><path d=\"M13.73 21a2 2 0 0 1-3.46 0\"/></symbol>
+      <symbol id=\"i-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></symbol>
+      <symbol id=\"i-check-circle\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/></symbol>
+      <symbol id=\"i-x-circle\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"/><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"/></symbol>
+      <symbol id=\"i-alert\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></symbol>
+      <symbol id=\"i-eye\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></symbol>
+      <symbol id=\"i-user\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></symbol>
+      <symbol id=\"i-user-plus\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"8.5\" cy=\"7\" r=\"4\"/><line x1=\"20\" y1=\"8\" x2=\"20\" y2=\"14\"/><line x1=\"17\" y1=\"11\" x2=\"23\" y2=\"11\"/></symbol>
+      <symbol id=\"i-pin\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></symbol>
+      <symbol id=\"i-clock\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></symbol>
+      <symbol id=\"i-building\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"2\" width=\"16\" height=\"20\" rx=\"1\"/><line x1=\"9\" y1=\"7\" x2=\"9\" y2=\"7.01\"/><line x1=\"15\" y1=\"7\" x2=\"15\" y2=\"7.01\"/><line x1=\"9\" y1=\"12\" x2=\"9\" y2=\"12.01\"/><line x1=\"15\" y1=\"12\" x2=\"15\" y2=\"12.01\"/><line x1=\"9\" y1=\"17\" x2=\"15\" y2=\"17\"/></symbol>
+      <symbol id=\"i-briefcase\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"7\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16\"/></symbol>
+      <symbol id=\"i-megaphone\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 11v3a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z\"/><path d=\"M15 8a4 4 0 0 1 0 8\"/><path d=\"M18 5a8 8 0 0 1 0 14\"/></symbol>
+      <symbol id=\"i-scale\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"21\"/><path d=\"M5 7l-3 6a3 3 0 0 0 6 0z\"/><path d=\"M19 7l-3 6a3 3 0 0 0 6 0z\"/><path d=\"M5 7h14\"/><path d=\"M9 21h6\"/></symbol>
+      <symbol id=\"i-cpu\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"1\"/><rect x=\"9\" y=\"9\" width=\"6\" height=\"6\"/><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"4\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"23\"/><line x1=\"1\" y1=\"12\" x2=\"4\" y2=\"12\"/><line x1=\"20\" y1=\"12\" x2=\"23\" y2=\"12\"/></symbol>
+      <symbol id=\"i-refresh\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"23 4 23 10 17 10\"/><polyline points=\"1 20 1 14 7 14\"/><path d=\"M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15\"/></symbol>
+      <symbol id=\"i-sparkle\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3l1.9 4.9L19 9.8l-5.1 1.9L12 16.6l-1.9-4.9L5 9.8l5.1-1.9z\"/></symbol>
+      <symbol id=\"i-mail\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"/><polyline points=\"2 6 12 13 22 6\"/></symbol>
+      <symbol id=\"i-target\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><circle cx=\"12\" cy=\"12\" r=\"6\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/></symbol>
+      <symbol id=\"i-dot\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"6\" fill=\"currentColor\"/></symbol>
+      <symbol id=\"i-message\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></symbol>
+      <symbol id=\"i-clip\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48\"/></symbol>
+      <symbol id=\"i-edit\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z\"/></symbol>
+      <symbol id=\"i-settings\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z\"/></symbol>
+      <symbol id=\"i-save\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><polyline points=\"17 21 17 13 7 13 7 21\"/><polyline points=\"7 3 7 8 15 8\"/></symbol>
+      <symbol id=\"i-inbox\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"22 12 16 12 14 15 10 15 8 12 2 12\"/><path d=\"M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z\"/></symbol>
+      <symbol id=\"i-shield\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></symbol>
+    </svg>·
+    <!-- Backdrop: only visible/interactive on mobile once the sidebar is opened -->
+    <div class=\"sb-backdrop\" id=\"sbBackdrop\"></div>
+    <aside class=\"sidebar\" id=\"sidebar\">
+      <div class=\"sb-brand\">
+        <div class=\"sb-ico\">B</div>
+        <div><h2>BOARDLINK</h2><p>CSPC Board Secretary</p></div>
+        <button type=\"button\" class=\"sb-close\" id=\"sbClose\" aria-label=\"Close menu\">
+          <svg class=\"icon\"><use href=\"#i-x\" xlink:href=\"#i-x\"/></svg>
+        </button>
+      </div>
+      <nav class=\"sb-nav\">······
+          <!-- Everyone else: board workflow navigation. -->
+          <p class=\"sb-sec\">Main</p>
+          <a href=\"/dashboard\" class=\"sb-a \"><svg class=\"icon\"><use href=\"#i-home\" xlink:href=\"#i-home\"/></svg> Dashboard</a>
+          <p class=\"sb-sec\">Modules</p>
+          <a href=\"/archive\"   class=\"sb-a active\"><svg class=\"icon\"><use href=\"#i-folder\" xlink:href=\"#i-folder\"/></svg> Digital Archive</a>
+          <a href=\"/meeting\"   class=\"sb-a \"><svg class=\"icon\"><use href=\"#i-file\" xlink:href=\"#i-file\"/></svg> Meeting Records</a>·······
+            <a href=\"/ocr\"     class=\"sb-a \"><svg class=\"icon\"><use href=\"#i-scan\" xlink:href=\"#i-scan\"/></svg> OCR</a>·············
+      </nav>
+      <div class=\"sb-foot\">BOARDLINK v1.0 © CSPC 2026</div>
+    </aside>·
+      <div class=\"main\">·····
+    <header class=\"topbar\">
+      <button type=\"button\" class=\"hamburger\" id=\"hamburger\" aria-label=\"Open menu\" aria-expanded=\"false\" aria-controls=\"sidebar\">
+        <svg class=\"icon\"><use href=\"#i-menu\" xlink:href=\"#i-menu\"/></svg>
+      </button>
+      <div class=\"tb-title\">Document Details</div>
+      <div class=\"tb-right\">·····
+        <div class=\"nb\" id=\"nb\">
+          <button type=\"button\" class=\"nb-btn\" id=\"nbBtn\" aria-haspopup=\"true\" aria-expanded=\"false\"
+                  aria-label=\"Notifications\">
+            <svg class=\"icon\"><use href=\"#i-bell\" xlink:href=\"#i-bell\"/></svg>
+            <span class=\"nb-count\" id=\"nbCount\" hidden>0</span>
+          </button>
+          <div class=\"nb-panel\" id=\"nbPanel\" hidden>
+            <div class=\"nb-head\">
+              <strong>Notifications</strong>···········
+            </div>·········
+              <div class=\"nb-empty\">No notifications yet.</div>·········
+            <a class=\"nb-all\" href=\"/notifications\">See all notifications</a>
+          </div>
+        </div>·····
+        <div class=\"row\">
+          <div class=\"av\">JC</div>
+          <div class=\"tb-who\">
+            <div class=\"fw7 fs13\">Juan A. Dela Cruz</div>
+            <div class=\"muted fs12\">Board Secretary</div>
+          </div>
+        </div>
+        <a href=\"/logout\" class=\"btn btn-light btn-sm\"><svg class=\"icon icon-sm\"><use href=\"#i-logout\" xlink:href=\"#i-logout\"/></svg> Logout</a>
+      </div>
+    </header>
+    <script>
+    /* The bell: opens its list, closes on a click outside or Escape, and
+       checks for new notices every minute so a member sees \"done\" without
+       reloading the page. */
+    (function(){
+      var wrap = document.getElementById('nb');
+      if (!wrap) return;
+      var btn = document.getElementById('nbBtn'), panel = document.getElementById('nbPanel');
+      var count = document.getElementById('nbCount');
+      function setOpen(on){ panel.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+      btn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(panel.hidden); });
+      document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) setOpen(false); });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
+      var seen = parseInt(count.textContent, 10) || 0;
+      function refresh(){
+        if (document.hidden || !window.fetch) return;
+        fetch('/notifications/count', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(d){
+            if (!d || typeof d.unread !== 'number') return;
+            count.textContent = d.unread > 99 ? '99+' : String(d.unread);
+            count.hidden = d.unread === 0;
+            btn.setAttribute('aria-label', 'Notifications' + (d.unread ? ', ' + d.unread + ' unread' : ''));
+            if (d.unread > seen) wrap.classList.add('has-new');
+            seen = d.unread;
+          }).catch(function(){});
+      }
+      setInterval(refresh, 60000);
+      document.addEventListener('visibilitychange', function(){ if (!document.hidden) refresh(); });
+    })();·
+    (function(){
+      var sidebar   = document.getElementById('sidebar');
+      var backdrop  = document.getElementById('sbBackdrop');
+      var hamburger = document.getElementById('hamburger');
+      var closeBtn  = document.getElementById('sbClose');
+      if (!sidebar || !hamburger) return;
+      function open(){ sidebar.classList.add('open'); backdrop.classList.add('show'); hamburger.setAttribute('aria-expanded','true'); }
+      function close(){ sidebar.classList.remove('open'); backdrop.classList.remove('show'); hamburger.setAttribute('aria-expanded','false'); }
+      hamburger.addEventListener('click', open);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+      if (backdrop) backdrop.addEventListener('click', close);
+      // Close the menu automatically if the window is resized back to desktop width
+      window.addEventListener('resize', function(){ if (window.innerWidth > 860) close(); });
+      // Close on Escape, which is what people expect from a drawer.
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    })();·
+    /* Submit feedback: on any form submit, put the submit button into a
+       spinner state. This gives immediate confirmation that the click
+       registered, which matters on slow campus connections where an
+       upload or OCR request can take several seconds. The button is
+       disabled via CSS pointer-events, so double submissions are also
+       prevented. */
+    (function(){
+      document.addEventListener('submit', function(e){
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.hasAttribute('data-no-spinner')) return;
+        // The button actually clicked, when a form has several.
+        var btn = (e.submitter && e.submitter.tagName === 'BUTTON') ? e.submitter
+                : form.querySelector('button[type=\"submit\"], button:not([type])');
+        // Wait until the form's own handlers have run. A submission they
+        // cancel (a \"Delete?\" confirmation answered No, or a form that
+        // posts in the background) must not leave the button disabled.
+        setTimeout(function(){
+          if (e.defaultPrevented) return;
+          if (btn && !btn.classList.contains('is-loading')) {
+            btn.classList.add('is-loading');
+            // If the browser restores the page from bfcache (back button),
+            // make sure the button is usable again.
+            window.addEventListener('pageshow', function(){ btn.classList.remove('is-loading'); });
+          }
+        }, 0);
+      }, true);
+    })();
+    </script>·
+        <div class=\"page\">········
+          <div class=\"ph\">
+            <div><h1><svg class=\"icon\"><use href=\"#i-file\" xlink:href=\"#i-file\"/></svg> Document Details</h1><p><a href=\"/archive\" class=\"back\"><svg class=\"icon\"><use href=\"#i-arrow-left\" xlink:href=\"#i-arrow-left\"/></svg> Back to Archive</a></p></div>
+            <div class=\"row\">···········
+                <a href=\"/ocr\" class=\"btn btn-light btn-sm\"><svg class=\"icon\"><use href=\"#i-search\" xlink:href=\"#i-search\"/></svg> Process OCR</a>···········
+              <button class=\"btn btn-gold btn-sm\"><svg class=\"icon\"><use href=\"#i-download\" xlink:href=\"#i-download\"/></svg> Download</button>
+            </div>
+          </div>·
+          <div class=\"g2 mb16\">
+            <div class=\"card\">
+              <div class=\"ch\"><h3><svg class=\"icon\"><use href=\"#i-clipboard\" xlink:href=\"#i-clipboard\"/></svg> Document Info</h3></div>
+              <div class=\"cb\">
+                <div class=\"dg\">
+                  <div><div class=\"dl\">Document ID</div><div class=\"dv fw7\">#0005</div></div>
+                  <div><div class=\"dl\">Type</div><div class=\"dv\">Board Resolution</div></div>
+                  <div><div class=\"dl\">Year</div><div class=\"dv\">2024</div></div>
+                  <div><div class=\"dl\">Category</div><div class=\"dv\">Institutional</div></div>
+                  <div><div class=\"dl\">Date Filed</div><div class=\"dv\">March 10, 2026</div></div>
+                  <div><div class=\"dl\">Status</div><div class=\"dv\"><span class=\"badge b-green\">Digitized</span></div></div>
+                </div>
+              </div>
+            </div>
+            <div class=\"card\">
+              <div class=\"ch\"><h3><svg class=\"icon\"><use href=\"#i-cpu\" xlink:href=\"#i-cpu\"/></svg> OCR &amp; AI Info</h3></div>
+              <div class=\"cb\">
+                <div class=\"dg\">
+                  <div><div class=\"dl\">OCR Processed</div><div class=\"dv\"><span class=\"badge b-green\"><svg class=\"icon\"><use href=\"#i-check-circle\" xlink:href=\"#i-check-circle\"/></svg> Yes</span></div></div>
+                  <div><div class=\"dl\">Searchable</div><div class=\"dv\"><span class=\"badge b-green\"><svg class=\"icon\"><use href=\"#i-check-circle\" xlink:href=\"#i-check-circle\"/></svg> Yes</span></div></div>
+                  <div><div class=\"dl\">Confidence</div><div class=\"dv fw7\" style=\"color:var(--green)\">94.7%</div></div>
+                  <div><div class=\"dl\">Word Count</div><div class=\"dv\">312 words</div></div>
+                </div>
+                <div class=\"mt14\">
+                  <a href=\"/archive?q=resolution\" class=\"btn btn-light btn-sm\"><svg class=\"icon\"><use href=\"#i-search\" xlink:href=\"#i-search\"/></svg> Find Similar</a>
+                </div>
+              </div>
+            </div>
+          </div>·
+          <div class=\"card\">
+            <div class=\"ch\"><h3><svg class=\"icon\"><use href=\"#i-file\" xlink:href=\"#i-file\"/></svg> OCR Extracted Text</h3></div>
+            <div class=\"cb\">
+              <div class=\"docbox\">REPUBLIC OF THE PHILIPPINES
+    CAMARINES SUR POLYTECHNIC COLLEGES
+    Nabua, Camarines Sur·
+    BOARD RESOLUTION NO. 2024-05
+    SERIES OF 2024·
+    WHEREAS, the Board of Trustees of Camarines Sur Polytechnic Colleges convened
+    in its Regular Session held at the Board Room of the institution;·
+    WHEREAS, the matters presented require formal board action and resolution;·
+    NOW THEREFORE, BE IT RESOLVED, as it is hereby resolved by the Board of
+    Trustees to formally adopt and approve the subject matter as presented.·
+    DONE in the City of Nabua, Camarines Sur, Philippines.·
+    [Signed]
+    Board Secretary
+    Camarines Sur Polytechnic Colleges</div>
+            </div>
+          </div>·
+        </div>
+      </div>
+    </div>
+    </body></html>
+    "
+
+      42 |         const res = await agent.get('/archive/5').set('X-Forwarded-For', ip);
+      43 |         expect(res.statusCode).toBe(200);
+    > 44 |         expect(res.text).toContain('Tuition Fee');
+         |                          ^
+      45 |     });
+      46 | });
+      47 |
+
+      at Object.toContain (tests/02-digital-archiving.test.js:44:26)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 6 passed, 7 total
+Snapshots:   0 total
+Time:        2.773 s, estimated 3 s
+Ran all test suites matching /tests\/02-digital-archiving.test.js/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

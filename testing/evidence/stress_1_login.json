@@ -1,0 +1,24 @@
+{
+ "name": "Concurrent Login Load",
+ "durationSec": 481.46,
+ "connections": 100,
+ "requests": 907,
+ "avgLatencyMs": 30391.3,
+ "p50": 33602,
+ "p90": 41388,
+ "p99": 74000,
+ "maxMs": 114649,
+ "throughputReqPerSec": 1.88,
+ "non2xx": 906,
+ "socketErrors": 174,
+ "errorRatePct": 0.11,
+ "statusCodes": {
+  "302": {
+   "count": 906
+  },
+  "undefined": {
+   "count": 1
+  }
+ },
+ "successful302": 906
+}

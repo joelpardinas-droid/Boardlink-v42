@@ -1,0 +1,32 @@
+<%
+  // The Digital Archive's two divisions, plus the Office's requests.
+  //   tab: 'docs' (Board Resolutions) | 'documents' | 'agendas' | 'requests'
+  const _office = currentUser && ['admin', 'secretary'].includes(currentUser.role);
+  const _pending = typeof pendingRequests !== 'undefined' ? Number(pendingRequests) || 0 : 0;
+%>
+<nav class="arc-tabs" aria-label="Digital Archive sections">
+  <a href="/archive" class="arc-tab <%= tab === 'docs' ? 'is-on' : '' %>" <%= tab === 'docs' ? 'aria-current=page' : '' %>>
+    <svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Board Resolutions
+  </a>
+  <a href="/archive/documents" class="arc-tab <%= tab === 'documents' ? 'is-on' : '' %>" <%= tab === 'documents' ? 'aria-current=page' : '' %>>
+    <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Documents
+  </a>
+  <a href="/archive/agendas" class="arc-tab <%= tab === 'agendas' ? 'is-on' : '' %>" <%= tab === 'agendas' ? 'aria-current=page' : '' %>>
+    <svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg> Meeting Agendas
+  </a>
+  <% if (_office) { %>
+    <a href="/archive/requests" class="arc-tab <%= tab === 'requests' ? 'is-on' : '' %>" <%= tab === 'requests' ? 'aria-current=page' : '' %>>
+      <svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg> Access Requests
+      <% if (_pending) { %><span class="arc-count"><%= _pending %></span><% } %>
+    </a>
+  <% } %>
+</nav>
+<style>
+  .arc-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #e3e7f0; margin: 0 0 16px; }
+  .arc-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; font-size: 13.5px; font-weight: 600;
+             color: #64748b; text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  .arc-tab:hover { color: #0d1f45; }
+  .arc-tab.is-on { color: #0d1f45; border-bottom-color: #c8922a; }
+  .arc-tab .icon { width: 15px; height: 15px; }
+  .arc-count { background: #c0392b; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 7px; }
+</style>

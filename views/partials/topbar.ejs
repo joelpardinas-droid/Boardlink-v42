@@ -1,0 +1,167 @@
+<%
+  // Display name, account-type label (config/roles.js) and initials.
+  function whoAmI(u) {
+    if (!u) return { name: 'Guest', label: '—', initials: '?' };
+    const label = roleLabel(u);
+    // Generate initials from full name (or username as fallback)
+    const src = (u.fullName || u.username || '?').toString();
+    const parts = src.trim().split(/\s+/).filter(Boolean);
+    let initials = '';
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+    } else if (parts.length === 1) {
+      initials = parts[0].slice(0, 2).toUpperCase();
+    } else {
+      initials = '?';
+    }
+    return { name: u.fullName || u.username, label, initials };
+  }
+  const _r = whoAmI(currentUser);
+%>
+<header class="topbar">
+  <button type="button" class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+    <svg class="icon"><use href="#i-menu" xlink:href="#i-menu"/></svg>
+  </button>
+  <div class="tb-title"><span class="tb-app">BOARDLINK</span><span class="tb-sep">|</span><%= pageTitle || 'Home' %></div>
+  <div class="tb-right">
+    <% if (currentUser) {
+         const _nUnread = typeof notifUnread === 'number' ? notifUnread : 0;
+         const _nList   = Array.isArray(typeof notifRecent !== 'undefined' ? notifRecent : null) ? notifRecent : [];
+         const _ago = d => {
+           const t = new Date(d); if (isNaN(t)) return '';
+           const m = Math.round((Date.now() - t) / 60000);
+           if (m < 1) return 'just now';
+           if (m < 60) return m + ' min ago';
+           const h = Math.round(m / 60); if (h < 24) return h + ' hr ago';
+           return t.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+         }; %>
+    <div class="nb" id="nb">
+      <button type="button" class="nb-btn" id="nbBtn" aria-haspopup="true" aria-expanded="false"
+              aria-label="Notifications<%= _nUnread ? ', ' + _nUnread + ' unread' : '' %>">
+        <svg class="icon"><use href="#i-bell" xlink:href="#i-bell"/></svg>
+        <span class="nb-count" id="nbCount"<% if (!_nUnread) { %> hidden<% } %>><%= _nUnread > 99 ? '99+' : _nUnread %></span>
+      </button>
+      <div class="nb-panel" id="nbPanel" hidden>
+        <div class="nb-head">
+          <strong>Notifications</strong>
+          <% if (_nUnread) { %>
+          <form action="/notifications/read-all" method="POST" data-no-spinner style="margin:0">
+            <button type="submit" class="nb-link">Mark all as read</button>
+          </form>
+          <% } %>
+        </div>
+        <% if (!_nList.length) { %>
+          <div class="nb-empty">No notifications yet.</div>
+        <% } else { _nList.forEach(function(n){ %>
+          <a class="nb-item<%= n.read_at ? '' : ' is-unread' %>" href="/notifications/<%= n.notification_id %>/open">
+            <span class="nb-ic"><svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg></span>
+            <span class="nb-body">
+              <span class="nb-msg"><%= n.message %></span>
+              <span class="nb-time"><%= _ago(n.created_at) %></span>
+            </span>
+          </a>
+        <% }) } %>
+        <a class="nb-all" href="/notifications">See all notifications</a>
+      </div>
+    </div>
+    <% } %>
+    <div class="um" id="um">
+      <button type="button" class="um-btn" id="umBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="av"><%= _r.initials.charAt(0) %></span>
+        <span class="tb-who"><%= _r.name %></span>
+        <svg class="icon icon-sm um-chev"><use href="#i-chevron-down" xlink:href="#i-chevron-down"/></svg>
+      </button>
+      <div class="um-panel" id="umPanel" hidden>
+        <div class="um-head"><strong><%= _r.name %></strong><span><%= _r.label %></span></div>
+        <a class="um-item" href="/logout"><svg class="icon icon-sm"><use href="#i-logout" xlink:href="#i-logout"/></svg> Log Out</a>
+      </div>
+    </div>
+  </div>
+</header>
+<script>
+/* The bell: opens its list, closes on a click outside or Escape, and
+   checks for new notices every minute so a member sees "done" without
+   reloading the page. */
+(function(){
+  var wrap = document.getElementById('nb');
+  if (!wrap) return;
+  var btn = document.getElementById('nbBtn'), panel = document.getElementById('nbPanel');
+  var count = document.getElementById('nbCount');
+  function setOpen(on){ panel.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(panel.hidden); });
+  document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) setOpen(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
+  var seen = parseInt(count.textContent, 10) || 0;
+  function refresh(){
+    if (document.hidden || !window.fetch) return;
+    fetch('/notifications/count', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d || typeof d.unread !== 'number') return;
+        count.textContent = d.unread > 99 ? '99+' : String(d.unread);
+        count.hidden = d.unread === 0;
+        btn.setAttribute('aria-label', 'Notifications' + (d.unread ? ', ' + d.unread + ' unread' : ''));
+        if (d.unread > seen) wrap.classList.add('has-new');
+        seen = d.unread;
+      }).catch(function(){});
+  }
+  setInterval(refresh, 60000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) refresh(); });
+})();
+
+/* The name at the top right opens a small menu (who you are, Log Out). */
+(function(){
+  var wrap = document.getElementById('um'); if (!wrap) return;
+  var btn = document.getElementById('umBtn'), panel = document.getElementById('umPanel');
+  function setOpen(on){ panel.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(panel.hidden); });
+  document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) setOpen(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
+})();
+
+(function(){
+  var sidebar   = document.getElementById('sidebar');
+  var backdrop  = document.getElementById('sbBackdrop');
+  var hamburger = document.getElementById('hamburger');
+  var closeBtn  = document.getElementById('sbClose');
+  if (!sidebar || !hamburger) return;
+  function open(){ sidebar.classList.add('open'); backdrop.classList.add('show'); hamburger.setAttribute('aria-expanded','true'); }
+  function close(){ sidebar.classList.remove('open'); backdrop.classList.remove('show'); hamburger.setAttribute('aria-expanded','false'); }
+  hamburger.addEventListener('click', open);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  if (backdrop) backdrop.addEventListener('click', close);
+  // Close the menu automatically if the window is resized back to desktop width
+  window.addEventListener('resize', function(){ if (window.innerWidth > 860) close(); });
+  // Close on Escape, which is what people expect from a drawer.
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+})();
+
+/* Submit feedback: on any form submit, put the submit button into a
+   spinner state. This gives immediate confirmation that the click
+   registered, which matters on slow campus connections where an
+   upload or OCR request can take several seconds. The button is
+   disabled via CSS pointer-events, so double submissions are also
+   prevented. */
+(function(){
+  document.addEventListener('submit', function(e){
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.hasAttribute('data-no-spinner')) return;
+    // The button actually clicked, when a form has several.
+    var btn = (e.submitter && e.submitter.tagName === 'BUTTON') ? e.submitter
+            : form.querySelector('button[type="submit"], button:not([type])');
+    // Wait until the form's own handlers have run. A submission they
+    // cancel (a "Delete?" confirmation answered No, or a form that
+    // posts in the background) must not leave the button disabled.
+    setTimeout(function(){
+      if (e.defaultPrevented) return;
+      if (btn && !btn.classList.contains('is-loading')) {
+        btn.classList.add('is-loading');
+        // If the browser restores the page from bfcache (back button),
+        // make sure the button is usable again.
+        window.addEventListener('pageshow', function(){ btn.classList.remove('is-loading'); });
+      }
+    }, 0);
+  }, true);
+})();
+</script>

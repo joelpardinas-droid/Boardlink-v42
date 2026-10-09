@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Digital Archive | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Digital Archive'}) %>
+    <div class="page">
+
+      <%
+        // Only the Board Secretary and System Administrator may upload
+        // Board Resolutions to the archive. Trustees and council
+        // members are read-only consumers of the archive.
+        const _canUpload = currentUser && ['admin','secretary'].includes(currentUser.role);
+      %>
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Digital Archive</h1>
+        </div>
+        <% if (_canUpload) { %>
+          <% if (typeof tab !== 'undefined' && tab === 'documents') { %>
+            <a href="/archive/documents/upload" class="btn btn-gold"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Upload Documents</a>
+          <% } else { %>
+            <a href="/archive/upload" class="btn btn-gold"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Upload Resolution</a>
+          <% } %>
+        <% } %>
+      </div>
+
+      <%- include('partials/archive-tabs', { tab: typeof tab !== 'undefined' ? tab : 'docs' }) %>
+      <%
+        const _member = typeof member !== 'undefined' && member;
+        const _hours = typeof accessHours !== 'undefined' ? accessHours : 24;
+        const _span = _hours % 24 === 0 ? (_hours / 24) + ' day' + (_hours === 24 ? '' : 's') : _hours + ' hour' + (_hours === 1 ? '' : 's');
+        const _focus = typeof focusDoc !== 'undefined' ? focusDoc : null;
+        const _when = d => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' }) : '';
+      %>
+      <% if (typeof notice !== 'undefined' && notice) { %><% const _closed = notice.indexOf('closed') >= 0; %><div class="alert <%= _closed ? 'a-warn' : 'a-ok' %>"><svg class="icon"><use href="#i-<%= _closed ? 'lock' : 'check-circle' %>" xlink:href="#i-<%= _closed ? 'lock' : 'check-circle' %>"/></svg> <%= notice %></div><% } %>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+
+      <%
+        const _mode = typeof mode !== 'undefined' ? mode : 'search';
+        const _isDocs = _mode === 'documents';
+        const _base = _isDocs ? '/archive/documents' : '/archive';
+        const _bodyBtns = [['', 'All'], ['bot', 'Board of Trustees'], ['councils', 'Board of Councils'], ['academic', 'Academic Council'], ['admin', 'Administrative Council'], ['ric', 'RIC Council']];
+        const _link = extra => { const p = new URLSearchParams(); const all = Object.assign({ year: _isDocs ? '' : (year || ''), body: body || '', type: _isDocs ? (type || '') : '' }, extra || {}); Object.entries(all).forEach(([k, v]) => { if (v) p.set(k, v); }); const t = p.toString(); return _base + (t ? '?' + t : ''); };
+      %>
+
+      <form action="<%= _base %>" method="GET">
+        <div class="sbar">
+          <% if (_mode === 'year') { %>
+            <input type="hidden" name="year" value="<%= year %>">
+          <% } %>
+          <% if (_isDocs && body) { %><input type="hidden" name="body" value="<%= body %>"><% } %>
+          <input type="text" name="q" value="<%= q || '' %>" placeholder="<%= _mode === 'year' ? 'Search the ' + year + ' resolutions' : _isDocs ? 'Search the documents' : (_member ? 'Search by number, title or year' : 'Search the Board Resolutions') %>">
+          <% if (_isDocs) { %>
+          <select name="type" aria-label="Type of document" class="arc-type">
+            <option value="">All types</option>
+            <% [['Manual','Manuals'],['Policy','Policies'],['Memorandum','Memoranda'],['Other','Other']].forEach(function (t) { %>
+              <option value="<%= t[0] %>" <%= type === t[0] ? 'selected' : '' %>><%= t[1] %></option>
+            <% }) %>
+          </select>
+          <% } %>
+          <button type="submit" class="btn btn-navy btn-sm">Search</button>
+          <a href="<%= _mode === 'year' ? '/archive?year=' + year : _isDocs ? _link({ q: '' , type: '' }) : '/archive' %>" class="btn btn-light btn-sm">Clear</a>
+        </div>
+      </form>
+
+      <% if (_isDocs) { %>
+        <nav class="body-tabs" aria-label="Board or council">
+          <% _bodyBtns.forEach(function (b) { %>
+            <a href="<%= _link({ body: b[0] }) %>" class="body-tab <%= (body || '') === b[0] ? 'is-on' : '' %>"><%= b[1] %></a>
+          <% }) %>
+        </nav>
+        <div class="card">
+          <div class="ch">
+            <h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Documents</h3>
+            <span class="muted fs12"><%= documents.length %> document<%= documents.length === 1 ? '' : 's' %><%= q ? ' with “' + q + '”' : '' %></span>
+          </div>
+          <%- include('partials/doc-table', { list: documents, member: _member, focus: _focus,
+                emptyText: q ? 'No document has &ldquo;' + String(q).replace(/[<>&"]/g, '') + '&rdquo;.' : 'No documents yet.' }) %>
+        </div>
+
+      <% } else if (_mode === 'folders') { %>
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Board Resolutions</h3>
+            </div>
+          <div class="cb">
+              <div class="gd-grid">
+                <% years.forEach(function (y) { %>
+                  <a class="gd-folder<%= y.n ? '' : ' is-empty' %>" href="<%= _link({ year: y.year }) %>" title="<%= y.n %> resolution<%= y.n === 1 ? '' : 's' %>">
+                    <svg class="gd-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    <span class="gd-name"><%= y.year %></span>
+                    <% if (y.n) { %><span class="gd-n"><%= y.n %></span><% } %>
+                  </a>
+                <% }) %>
+              </div>
+          </div>
+        </div>
+
+      <% } else if (_mode === 'year') { %>
+        <div class="card">
+          <div class="ch">
+            <h3><a href="<%= _link({ year: '' }) %>" class="crumb"><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Board Resolutions</a>
+              <span class="muted" style="font-weight:400">&rsaquo;</span> <%= year %></h3>
+            <span class="muted fs12"><%= documents.length %> resolution<%= documents.length === 1 ? '' : 's' %><%= q ? ' with “' + q + '”' : '' %></span>
+          </div>
+          <%- include('partials/doc-table', { list: documents, member: _member, focus: _focus,
+                emptyText: q ? 'No ' + year + ' resolution has &ldquo;' + String(q).replace(/[<>&"]/g, '') + '&rdquo;.' : 'This folder is empty.' }) %>
+        </div>
+
+      <% } else { %>
+        <div class="card">
+          <div class="ch">
+            <h3><svg class="icon"><use href="#i-search" xlink:href="#i-search"/></svg> Search results</h3>
+            <span class="muted fs12"><%= resultCount %> resolution<%= resultCount === 1 ? '' : 's' %><%= q ? ' with “' + q + '”' : '' %> · all years</span>
+          </div>
+          <%- include('partials/doc-table', { list: documents, member: _member, focus: _focus,
+                emptyText: q ? 'No resolution has &ldquo;' + String(q).replace(/[<>&"]/g, '') + '&rdquo;. Try fewer words, or search by number such as <strong>2026-21</strong>.' : 'No resolutions yet.' }) %>
+        </div>
+      <% } %>
+
+    </div>
+  </div>
+</div>
+<style>
+  .arc-type { flex: 0 0 auto; width: auto; min-width: 150px; }
+  .body-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+  .body-tab { padding: 6px 12px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #e3e7f0; text-decoration: none; }
+  .body-tab.is-on { background: #0d1f45; color: #fff; border-color: #0d1f45; }
+  /* v93: year folders like Google Drive's */
+  .gd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+  .gd-folder { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px 0 16px; border-radius: 12px; background: #f0f4f9;
+               color: #1f1f1f; text-decoration: none; font-size: 14px; font-weight: 500; transition: background-color .12s, box-shadow .12s; }
+  .gd-folder:hover { background: #e1e5ea; }
+  .gd-folder:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px; }
+  .gd-ic { width: 22px; height: 22px; flex: 0 0 auto; fill: #444746; }
+  .gd-name { flex: 1; }
+  .gd-n { font-size: 11.5px; font-weight: 600; color: #444746; background: #fff; border-radius: 10px; padding: 1px 8px; }
+  .gd-folder.is-empty .gd-ic { fill: #8e918f; }
+  .yr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .yr-folder { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; border: 1px solid #e3e7f0; border-radius: 10px; background: #fffdf7; text-decoration: none; color: #0d1f45; transition: border-color .15s, box-shadow .15s; }
+  .yr-folder:hover { border-color: #c8922a; box-shadow: 0 2px 10px rgba(200,146,42,.15); }
+  .yr-ic { width: 30px; height: 30px; color: #c8922a; fill: #f6e3b8; }
+  .yr-name { font-size: 18px; font-weight: 800; }
+  .yr-n { font-size: 12px; color: #64748b; }
+  .crumb { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .crumb:hover { color: #c8922a; }
+  .att-line { display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; font-size: 12.5px; line-height: 1.45; color: #334155; }
+  .att-line > .icon { color: #c8922a; flex: 0 0 auto; margin-top: 2px; }
+  .att-line > span { flex: 0 1 auto; min-width: 0; }
+  .att-link { font-weight: 700; color: #c8922a; flex: 0 0 auto; }
+  td .badge { white-space: nowrap; }
+  tr.is-focus td { background: #fff8e8; }
+  .dr-req { margin-top: 8px; }
+  .dr-req summary { list-style: none; display: inline-flex; cursor: pointer; }
+  .dr-req summary::-webkit-details-marker { display: none; }
+  .dr-req form { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 460px; }
+  .dr-req label { font-size: 12px; font-weight: 600; color: #334155; }
+  .dr-req textarea { min-height: 64px; }
+  .dr-req button { align-self: flex-start; }
+</style>
+</body></html>

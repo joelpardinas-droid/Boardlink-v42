@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= doc.doc_type === 'Resolution' ? 'Resolution No. ' + (doc.category || doc.document_id) : doc.title %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .dv-frame { width: 100%; height: 78vh; min-height: 520px; border: 0; border-radius: var(--r); background: #e9edf5; display: block; }
+    .dv-text { white-space: pre-wrap; font: 13px/1.6 'Times New Roman', serif; color: var(--dark); max-height: 60vh; overflow: auto; }
+    .dv-title { font-size: 15px; line-height: 1.5; color: var(--navy); }
+    .dv-info { padding: 14px 18px; }
+    .dv-info-title { font-size: 15px; font-weight: 700; color: var(--navy); line-height: 1.45; margin-bottom: 8px; }
+    .dv-info-row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 13px; color: var(--dark); }
+    .dv-info-row em { font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+    .att-tag { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 10px; padding: 1px 8px; margin-right: 4px; }
+    .att-tag-p { color: #8a5a00; background: #fdf1d8; }
+    .att-tag-a { color: #1a8f5c; background: #dff5ed; }
+    .att-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef1f6; flex-wrap: wrap; }
+    .att-ic { width: 22px; height: 22px; color: #c8922a; flex: 0 0 auto; }
+    .att-main { flex: 1 1 260px; min-width: 0; font-size: 13.5px; line-height: 1.45; }
+    .att-act { display: flex; gap: 6px; flex-wrap: wrap; }
+    .att-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px; }
+    .att-form h4 { margin: 0 0 8px; font-size: 13px; color: var(--navy); }
+    .att-form .uv-row { display: flex; gap: 8px; }
+    .att-form .uv-row select { flex: 1; min-width: 0; }
+    .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .pick-filter { width: 100%; margin-bottom: 6px; padding: 8px 12px; border: 1px solid #e3e7f0; border-radius: 8px; font: inherit; font-size: 13px; }
+    .pick-list { max-height: 260px; overflow: auto; border: 1px solid #e3e7f0; border-radius: 8px; padding: 4px 0; background: #fff; }
+    .pick-year { font-size: 11px; font-weight: 700; color: #94a3b8; padding: 6px 10px 2px; text-transform: uppercase; letter-spacing: .04em; }
+    .pick-item { display: flex; gap: 8px; align-items: flex-start; padding: 5px 10px; font-size: 12.5px; line-height: 1.4; cursor: pointer; }
+    .pick-item:hover { background: #f8fafc; }
+    .pick-item input { margin-top: 2px; flex: 0 0 auto; width: auto; }
+    .att-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+    .att-file { border: 1px solid #e3e7f0; border-radius: 8px; padding: 10px; background: #fafbfd; }
+    .drv-btn { display: inline-flex; align-items: center; gap: 8px; }
+    .drv-tag { display: inline-block; font-size: 10.5px; font-weight: 700; color: #1a73e8; background: #e8f0fe; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
+    .att-x { border: 0; background: none; color: #94a3b8; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; float: right; }
+    .att-x:hover { color: #c0392b; }
+    .att-file-name { font-size: 12px; font-weight: 700; color: #0d1f45; margin-bottom: 6px; word-break: break-all; }
+    .att-file .g3 { grid-template-columns: 2fr 1fr 1fr; }
+    @media (max-width: 900px) { .att-file .g3 { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .att-forms, .g3 { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .dv-frame { height: 70vh; min-height: 380px; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Document Details'}) %>
+    <div class="page">
+      <%
+        const _canOcr = currentUser && ['admin','secretary'].includes(currentUser.role);
+        const _fmt = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
+        const _file = '/archive/' + doc.document_id + '/file';
+        const _isRes = doc.doc_type === 'Resolution';
+        const _heading = _isRes ? 'Resolution No. ' + (doc.category || '—') : doc.title;
+      %>
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> <%= _heading %></h1>
+          <p><a href="<%= _isRes ? '/archive?year=' + doc.doc_year : '/archive/documents' %>" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> <%= _isRes ? 'Back to ' + doc.doc_year + ' Board Resolutions' : 'Back to Documents' %></a></p>
+        </div>
+        <div class="row">
+          <% if (_canOcr) { %>
+            <a href="/ocr" class="btn btn-light btn-sm"><svg class="icon"><use href="#i-search" xlink:href="#i-search"/></svg> Process OCR</a>
+          <% } %>
+          <% if (hasFile) { %>
+            <a href="<%= _file %>?download=1" class="btn btn-gold btn-sm"><svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download</a>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (typeof accessUntil !== 'undefined' && accessUntil) { %>
+        <div class="alert a-warn" style="font-size:12.5px">
+          <svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg>
+          Open until <strong><%= new Date(accessUntil).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' }) %></strong>.
+        </div>
+      <% } %>
+      <% if (typeof savedFromOcr !== 'undefined' && savedFromOcr) { %>
+        <div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg>
+          Saved to the Digital Archive. This PDF was made from the corrected words, and every word can be searched.</div>
+      <% } %>
+      <%# v91: one small strip instead of the Document Info and OCR & Search boxes %>
+      <div class="card mb16 dv-info">
+        <div class="dv-info-title"><%= doc.title %></div>
+        <div class="dv-info-row">
+          <span><em><%= _isRes ? 'Resolution No.' : 'Reference No.' %></em> <strong><%= doc.category || '—' %></strong></span>
+          <span><em>Type</em> <%= doc.doc_type === 'Resolution' ? 'Board Resolution' : doc.doc_type %></span>
+          <span><em>Year</em> <%= doc.doc_year %></span>
+          <span><em>Board / council</em> <%= doc.governing_body || 'Board of Trustees' %></span>
+          <span><em>Archived</em> <%= _fmt(doc.uploaded_at) %></span>
+          <span class="badge <%= text ? 'b-green' : 'b-orange' %>"><%= text ? 'Digitized' : 'Being read' %></span>
+        </div>
+      </div>
+
+      <%
+        // v87: the approved document(s) of a resolution, or the resolution
+        // that approved this manual / policy / memorandum.
+        const _att = typeof attached !== 'undefined' ? attached : [];
+        const _by = typeof approvedBy !== 'undefined' ? approvedBy : [];
+        const _office = typeof office !== 'undefined' && office;
+        const _list = _isRes ? _att : _by;
+        const _name = x => (x.doc_type === 'Resolution' ? 'Resolution No. ' + (x.category || '—') + ': ' : (x.category ? x.category + ': ' : '')) + x.title;
+        const _kind = x => x.doc_type === 'Resolution' ? 'Board Resolution' : x.doc_type;
+      %>
+      <% if (typeof viaResolution !== 'undefined' && viaResolution) { %>
+      <% } %>
+      <% if (!_isRes) { %>
+      <% if (_list.length) { %>
+      <div class="card mb16" id="attachments">
+        <div class="ch"><h3><svg class="icon"><use href="#i-clip" xlink:href="#i-clip"/></svg> <%= _isRes ? 'Approved documents' : 'Approved by' %></h3>
+          <% if (_office && _isRes) { %>
+            <a href="/archive/upload?for=<%= doc.document_id %>" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-plus" xlink:href="#i-plus"/></svg> Add approved documents</a>
+          <% } %>
+        </div>
+        <div class="cb">
+          <% if (typeof attachDone !== 'undefined' && attachDone) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= attachDone %></div><% } %>
+          <% if (typeof attachError !== 'undefined' && attachError) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= attachError %></div><% } %>
+          <% if (!_list.length) { %>
+            <p class="muted fs13" style="margin:0 0 4px">
+              No approved document is attached to this resolution yet.
+            </p>
+          <% } %>
+          <% _list.forEach(function (x) {
+               const isAg = x.kind === 'agenda';
+               const open = _office || isAg || (x.access && x.access.state === 'open');
+               const viewUrl = isAg ? '/meeting/' + x.meeting_id + '/item/' + x.item_id + '/review' : '/archive/' + x.document_id; %>
+            <div class="att-row">
+              <svg class="icon att-ic"><use href="#i-<%= isAg ? 'clipboard' : 'file' %>" xlink:href="#i-<%= isAg ? 'clipboard' : 'file' %>"/></svg>
+              <div class="att-main">
+                <div class="fw7"><%= isAg ? x.title : _name(x) %></div>
+                <div class="muted fs12">
+                  <% if (isAg) { %><span class="att-tag att-tag-a">Agenda item</span> <%= x.meeting_title || x.meeting_type %><%= x.meeting_number ? ' · ' + x.meeting_number : '' %> · Item <%= x.item_order %>
+                  <% } else if (x.kind === 'pages') { %><span class="att-tag att-tag-p"><%= x.page_from === x.page_to ? 'Page ' + x.page_from : 'Pages ' + x.page_from + '–' + x.page_to %></span> <%= _kind(x) %>
+                  <% } else { %><%= _kind(x) %> · <%= x.doc_year %><% } %>
+                </div>
+              </div>
+              <div class="att-act">
+                <% if (isAg) { %>
+                  <a href="<%= viewUrl %>" class="btn btn-navy btn-sm"><svg class="icon icon-sm"><use href="#i-eye" xlink:href="#i-eye"/></svg> <%= x.file_kind === 'video' ? 'Watch' : 'View' %></a>
+                <% } else if (open) { %>
+                  <a href="/archive/<%= x.document_id %>" class="btn btn-navy btn-sm"><svg class="icon icon-sm"><use href="#i-eye" xlink:href="#i-eye"/></svg> View</a>
+                  <% if (x.has_file) { %><a href="/archive/<%= x.document_id %>/file?download=1" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-download" xlink:href="#i-download"/></svg> Download</a><% } %>
+                <% } else { %>
+                  <a href="/archive?doc=<%= x.document_id %>#doc-<%= x.document_id %>" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-lock" xlink:href="#i-lock"/></svg> Request access</a>
+                <% } %>
+                <% if (_office) { %>
+                  <form action="/archive/<%= doc.document_id %>/<%= isAg ? 'detach-agenda/' + x.item_id : 'detach/' + x.document_id %>" method="POST" style="margin:0"
+                        onsubmit="return confirm('Remove this link? Both documents stay in the archive.');">
+                    <button class="btn btn-light btn-sm" type="submit" title="Remove the link">Unlink</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+
+        </div>
+      </div>
+      <% } %>
+      <% if (hasFile && isPdf) { %>
+        <div class="card mb16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> The document</h3>
+            <a href="<%= _file %>" target="_blank" rel="noopener" class="btn btn-light btn-sm">Open in new tab</a></div>
+          <div class="cb"><iframe class="dv-frame" src="<%= _file %>#view=FitH" title="<%= _heading %>"></iframe></div>
+        </div>
+      <% } else if (!hasFile) { %>
+        <div class="alert a-warn">No scanned file.</div>
+      <% } %>
+
+      <% } else { %>
+      <%
+        // v93: a resolution — the PDF itself, with the approved documents
+        // attached to words or areas in it, and a floating list of them.
+        const _items = _att.map(function (x) {
+          const isAg = x.kind === 'agenda';
+          const open = _office || isAg || (x.access && x.access.state === 'open');
+          let rects = null; try { rects = x.anchor_rects ? JSON.parse(x.anchor_rects) : null; } catch (_) { rects = null; }
+          return {
+            key: isAg ? 'a' + x.item_id : 'd' + x.document_id,
+            kind: x.kind, title: x.title, open: open,
+            tag: isAg ? 'Agenda item' : (x.kind === 'pages' ? (x.page_from === x.page_to ? 'Page ' + x.page_from : 'Pages ' + x.page_from + '–' + x.page_to) : (x.doc_type || 'File')),
+            sub: isAg ? (x.meeting_title || x.meeting_type) + (x.meeting_number ? ' · ' + x.meeting_number : '') + ' · Item ' + x.item_order
+                      : (x.kind === 'pages' ? x.doc_type : String(x.doc_year || '')),
+            preview: isAg ? null : (x.has_file ? '/archive/' + x.document_id + '/file' : null),
+            view: isAg ? '/meeting/' + x.meeting_id + '/item/' + x.item_id + '/review' : '/archive/' + x.document_id,
+            download: !isAg && x.has_file ? '/archive/' + x.document_id + '/file?download=1' : null,
+            unlink: _office ? '/archive/' + doc.document_id + '/' + (isAg ? 'detach-agenda/' + x.item_id : 'detach/' + x.document_id) : null,
+            anchor: x.anchor_page && rects ? { page: x.anchor_page, text: x.anchor_text || '', rects: rects } : null,
+          };
+        });
+      %>
+      <% if (typeof attachDone !== 'undefined' && attachDone) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= attachDone %></div><% } %>
+      <% if (typeof attachError !== 'undefined' && attachError) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= attachError %></div><% } %>
+
+      <% if (hasFile && isPdf) { %>
+        <div class="card rsv" id="rsv" data-file="<%= _file %>" data-can-attach="<%= _office ? '1' : '0' %>">
+          <div class="rsv-bar">
+            <button type="button" class="btn btn-light btn-sm" id="rsvOut" aria-label="Zoom out">−</button>
+            <span class="rsv-zoom" id="rsvZoom">100%</span>
+            <button type="button" class="btn btn-light btn-sm" id="rsvIn" aria-label="Zoom in">+</button>
+            <span style="flex:1"></span>
+            <a href="<%= _file %>" target="_blank" rel="noopener" class="btn btn-light btn-sm">Open in new tab</a>
+          </div>
+          <div class="rsv-pages" id="rsvPages"><div class="rsv-loading">Opening…</div></div>
+        </div>
+      <% } else if (hasFile) { %>
+        <div class="card mb16"><div class="cb"><img src="<%= _file %>" alt="<%= _heading %>" style="max-width:100%;display:block;margin:0 auto"></div></div>
+      <% } else { %>
+        <div class="alert a-warn">No scanned file.</div>
+      <% } %>
+
+      <%# The floating list of approved documents %>
+      <button type="button" class="rsv-fab" id="rsvFab" aria-expanded="false" aria-controls="rsvPanel">
+        <svg class="icon"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+        <span>Approved documents</span>
+        <span class="rsv-fab-n" id="rsvFabN"><%= _items.length %></span>
+      </button>
+      <section class="rsv-panel" id="rsvPanel" hidden aria-label="Approved documents">
+        <div class="rsv-panel-h">
+          <button type="button" class="rsv-back" id="rsvBack" hidden aria-label="Back to the list">
+            <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg></button>
+          <h3 id="rsvPanelTitle">Approved documents</h3>
+          <button type="button" class="rsv-x" id="rsvClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="rsv-filter" id="rsvFilter" hidden>
+          <span id="rsvFilterText"></span>
+          <button type="button" class="rsv-link" id="rsvShowAll">Show all</button>
+        </div>
+        <div class="rsv-list" id="rsvList"></div>
+        <div class="rsv-preview" id="rsvPreview" hidden></div>
+      </section>
+      <script type="application/json" id="rsvData"><%- JSON.stringify(_items).replace(/</g, '\\u003c') %></script>
+
+      <% if (_office) { %>
+        <button type="button" class="rsv-attach-btn" id="rsvAttachBtn" hidden>
+          <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg> Attach document
+        </button>
+        <dialog class="rsv-dlg" id="rsvDlg">
+          <form action="/archive/<%= doc.document_id %>/attach-upload" method="POST" enctype="multipart/form-data" id="rsvForm">
+            <div class="rsv-dlg-h">
+              <h3>Attach approved document</h3>
+              <button type="button" class="rsv-x" id="rsvDlgClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="rsv-quote" id="rsvQuote" hidden></div>
+            <input type="hidden" name="anchorPage" id="rsvAPage">
+            <input type="hidden" name="anchorText" id="rsvAText">
+            <input type="hidden" name="anchorRects" id="rsvARects">
+            <%- include('partials/approved-docs', { picks: (typeof picks !== 'undefined' && picks) ? picks : { others: [] }, exclude: _att.filter(x => x.document_id).map(x => x.document_id), resDocId: doc.document_id, hint: doc.title }) %>
+            <div class="row mt14">
+              <button type="submit" class="btn btn-navy" id="rsvSave"><svg class="icon"><use href="#i-save" xlink:href="#i-save"/></svg> Save</button>
+              <button type="button" class="btn btn-light" id="rsvCancel">Cancel</button>
+            </div>
+          </form>
+        </dialog>
+      <% } %>
+      <link rel="stylesheet" href="/css/resolution-view.css">
+      <script type="module" src="/js/resolution-view.js"></script>
+      <% } %>
+
+      <% if (!hasFile && text) { %>
+        <!-- Only for a record with no scanned file (e.g. drafted in
+             BOARDLINK): its words are the only thing to show. -->
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> The document's words</h3></div>
+          <div class="cb"><div class="dv-text"><%= text %></div></div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+</body></html>

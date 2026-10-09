@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Edit document | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/item-document-edit.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Edit Document'}) %>
+    <div class="page de-page">
+
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> Edit document</h1>
+          <p>Item <%= item.item_order %>: <%= item.item_title %> — <%= item.item_pdf_name || 'document.pdf' %></p>
+        </div>
+        <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/review" class="btn btn-light btn-sm">
+          <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to document
+        </a>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert a-err" style="margin-bottom:14px"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div>
+      <% } %>
+      <div id="deError" class="alert a-err" style="margin-bottom:14px" hidden></div>
+
+
+      <form id="deForm" method="POST" enctype="multipart/form-data"
+            action="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/edit">
+        <input type="hidden" name="pages" id="dePages">
+
+        <div class="de-bar">
+          <label class="btn btn-light btn-sm de-add">
+            <svg class="icon icon-sm"><use href="#i-clip" xlink:href="#i-clip"/></svg> Add pages from a PDF
+            <input type="file" id="deInsert" accept="application/pdf,.pdf" multiple>
+          </label>
+          <button type="button" class="btn btn-light btn-sm" id="deReset">Start over</button>
+          <span class="de-count" id="deCount"></span>
+          <span class="de-spacer"></span>
+          <button type="submit" class="btn btn-gold btn-sm" id="deSave">
+            <svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Save document
+          </button>
+        </div>
+
+        <div class="de-grid" id="deGrid" aria-label="Pages of this document">
+          <p class="de-loading" id="deLoading"><span class="de-spin" aria-hidden="true"></span> Opening the document…</p>
+        </div>
+      </form>
+
+      <% if (versions && versions.length) { %>
+        <div class="card de-versions">
+          <div class="ch"><h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Earlier versions</h3></div>
+          <div class="cb">
+            <ul>
+              <% versions.forEach(v => { %>
+                <li>
+                  <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/v<%= v.version %>.pdf">Version <%= v.version %></a>
+                  <span><%= v.pages ? v.pages + ' page' + (v.pages === 1 ? '' : 's') : '' %><% if (v.note) { %> — <%= v.note %><% } %></span>
+                  <span class="de-when">
+                    <%= new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }) %><% if (v.created_by_name) { %>, <%= v.created_by_name %><% } %>
+                  </span>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        </div>
+      <% } %>
+
+      <noscript><div class="alert a-warn">Editing a document needs JavaScript.</div></noscript>
+      <script type="application/json" id="deData">
+        <%- JSON.stringify({
+              file: `/meeting/${meeting.meeting_id}/item/${item.item_id}/file`,
+              comments: commentsPerPage,
+              maxMb: Number(maxUploadMb) || 100,
+            }) %>
+      </script>
+      <script type="module" src="/js/item-document-edit.js"></script>
+    </div>
+  </div>
+</div>
+</body>
+</html>

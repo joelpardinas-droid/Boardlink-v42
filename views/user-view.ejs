@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= user.full_name %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .uv-actions .cb > form + form, .uv-actions .cb > form + details { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .uv-actions h4 { margin: 0 0 4px; font-size: 14px; color: var(--navy); }
+    .uv-actions p.fs12 { margin: 0 0 10px; }
+    .uv-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .uv-row .fg { margin: 0; flex: 1 1 170px; }
+    .uv-danger summary { cursor: pointer; color: var(--red); font-weight: 600; font-size: 13px; }
+    .btn-red { background: var(--red); color: #fff; border: 1px solid var(--red); }
+    .btn-red:hover { filter: brightness(.95); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'User Profile'}) %>
+    <div class="page">
+      <%
+        const u = user;
+        const isAdmin = currentUser && currentUser.role === 'admin';
+        const status = u.account_status || (u.is_active ? 'active' : 'retired');
+        const _date = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
+        const parts = (u.full_name || u.username || '?').toString().trim().split(/\s+/).filter(Boolean);
+        const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (parts[0] || '?').slice(0, 2).toUpperCase();
+        const currentKey = (types.find(t => t.role === u.role && (t.council_type || null) === (u.council_type || null)) || {}).key;
+        const badge = { active: ['b-green', 'Active'], pending: ['b-orange', 'Waiting for approval'], retired: ['b-red', 'Removed'] }[status] || ['b-blue', status];
+        let permTags = [];
+        if (u.role === 'admin') permTags = ['manage_users', 'approve_sign_ups', 'remove_accounts'];
+        else if (u.role === 'secretary') permTags = ['view', 'create_meeting', 'attach_item_documents', 'compile_comments', 'generate_briefing', 'draft_resolution', 'upload', 'ocr_autofill', 'transcribe', 'export'];
+        else permTags = ['view_own_body_meetings', 'read_item_documents', 'post_comment', 'edit_own_comments'];
+      %>
+      <div class="ph"><div><h1><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> <%= isAdmin ? 'Manage Account' : 'My Profile' %></h1>
+        <% if (isAdmin) { %><p><a href="/users" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Users</a></p><% } %></div></div>
+
+      <% if (done) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= done %></div><% } %>
+      <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> Account Information</h3></div>
+          <div class="cb">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+              <div style="width:52px;height:52px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#f5c96a;font-size:18px;font-weight:800"><%= initials %></div>
+              <div>
+                <div class="fw7" style="font-size:16px"><%= u.full_name %></div>
+                <div class="muted fs12">@<%= u.username %></div>
+              </div>
+            </div>
+            <div class="dg">
+              <div><div class="dl">Account type</div><div class="dv"><span class="badge b-blue"><%= roleLabel(u) %></span></div></div>
+              <div><div class="dl">Status</div><div class="dv"><span class="badge <%= badge[0] %>"><%= badge[1] %></span></div></div>
+              <div><div class="dl">Gmail (sign-in)</div><div class="dv"><%= u.email %></div></div>
+              <div><div class="dl">Signs in with</div><div class="dv"><%= u.google_sub ? 'Google or password' : 'Password' %></div></div>
+              <div><div class="dl">Member since</div><div class="dv"><%= _date(u.created_at) %></div></div>
+              <div><div class="dl">User ID</div><div class="dv">#<%= String(u.user_id).padStart(4, '0') %></div></div>
+              <% if (status === 'retired') { %>
+                <div><div class="dl">Removed on</div><div class="dv"><%= _date(u.retired_at) %></div></div>
+                <div><div class="dl">Was</div><div class="dv"><%= u.retired_from || '—' %></div></div>
+                <div style="grid-column:1/-1"><div class="dl">Reason</div><div class="dv"><%= u.retired_note || '—' %></div></div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <% if (isAdmin) { %>
+        <div class="card uv-actions">
+          <div class="ch"><h3><svg class="icon"><use href="#i-settings" xlink:href="#i-settings"/></svg> Administrator actions</h3></div>
+          <div class="cb">
+            <% if (status === 'pending') { %>
+              <form action="/users/<%= u.user_id %>/approve" method="POST">
+                <h4>Approve this sign-up</h4>
+                <p class="fs12 muted">Asked to join as <strong><%= (types.find(t => t.key === u.requested_type) || {}).label || '—' %></strong></p>
+                <div class="uv-row">
+                  <div class="fg"><label>Approve as</label>
+                    <select name="accountType"><% types.filter(t => t.key !== 'admin').forEach(t => { %><option value="<%= t.key %>" <%= t.key === u.requested_type ? 'selected' : '' %>><%= t.label %></option><% }) %></select></div>
+                  <button class="btn btn-gold btn-sm" type="submit">Approve</button>
+                </div>
+              </form>
+              <form action="/users/<%= u.user_id %>/reject" method="POST" onsubmit="return confirm('Turn down and remove this sign-up?');">
+                <h4>Turn down</h4>
+                <button class="btn btn-light btn-sm" type="submit">Turn down</button>
+              </form>
+
+            <% } else if (status === 'active') { %>
+              <% if (isSelf) { %>
+                <p class="fs13 muted" style="margin:0">This is your own account.</p>
+              <% } else { %>
+              <form action="/users/<%= u.user_id %>/type" method="POST">
+                <h4>Change account type</h4>
+                <div class="uv-row">
+                  <div class="fg"><select name="accountType" aria-label="New account type"><% types.forEach(t => { %><option value="<%= t.key %>" <%= t.key === currentKey ? 'selected' : '' %>><%= t.label %></option><% }) %></select></div>
+                  <button class="btn btn-light btn-sm" type="submit">Save</button>
+                </div>
+              </form>
+              <form action="/users/<%= u.user_id %>/retire" method="POST"
+                    onsubmit="return confirm(this.reason.value === 'Account made by mistake' ? 'Delete the account of <%= String(u.full_name).replace(/'/g, '') %> completely? This cannot be undone.' : 'Remove <%= String(u.full_name).replace(/'/g, '') %> from BOARDLINK? They will no longer be able to sign in.');">
+                <h4>Remove from BOARDLINK</h4>
+                <div class="uv-row">
+                  <div class="fg"><label>Reason</label>
+                    <select name="reason"><% ['Term ended', 'Retired', 'Resigned', 'No longer with CSPC', 'Moved to another body', 'Account made by mistake', 'Other'].forEach(r => { %><option><%= r %></option><% }) %></select></div>
+                  <div class="fg"><label>Date</label><input type="date" name="date" value="<%= new Date().toISOString().slice(0, 10) %>"></div>
+                </div>
+                <div class="fg" style="margin-top:8px"><label>Note (optional)</label><input name="note" maxlength="200" placeholder="e.g. Term as Trustee ended June 30, 2026"></div>
+                <button class="btn btn-red btn-sm" type="submit" style="margin-top:6px"><svg class="icon icon-sm"><use href="#i-x-circle" xlink:href="#i-x-circle"/></svg> Remove from BOARDLINK</button>
+              </form>
+              <% } %>
+
+            <% } else if (status === 'retired') { %>
+              <form action="/users/<%= u.user_id %>/reactivate" method="POST">
+                <h4>Bring back</h4>
+                <div class="uv-row">
+                  <div class="fg"><label>As</label><select name="accountType"><% types.forEach(t => { %><option value="<%= t.key %>" <%= t.key === currentKey ? 'selected' : '' %>><%= t.label %></option><% }) %></select></div>
+                  <button class="btn btn-gold btn-sm" type="submit">Make active again</button>
+                </div>
+              </form>
+            <% } %>
+
+          </div>
+        </div>
+        <div class="card uv-actions">
+          <div class="ch"><h3><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> Account history</h3>
+            <a href="/users/logs?q=<%= encodeURIComponent(u.email) %>" class="btn btn-light btn-sm">All logs</a></div>
+          <% const _h = typeof history !== 'undefined' ? history : []; %>
+          <% if (!_h.length) { %>
+            <div class="cb muted fs13">Nothing recorded yet.</div>
+          <% } else { %>
+            <ul class="uv-log">
+              <% _h.forEach(function (l) { %>
+                <li>
+                  <span class="uv-log-a"><%= (logActions || {})[l.action] || l.action %></span>
+                  <% if (l.details) { %><span class="muted"> — <%= l.details %></span><% } %>
+                  <div class="muted fs12"><%= new Date(l.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' }) %><%= l.actor_name ? ' · by ' + l.actor_name : '' %></div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+        <% } else { %>
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg> Permissions</h3></div>
+          <div class="cb">
+            <div class="dl" style="margin-bottom:10px">Assigned for: <%= roleLabel(u) %></div>
+            <% permTags.forEach(p => { %><span class="ptag"><%= p %></span><% }) %>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  .uv-log { list-style: none; margin: 0; padding: 4px 18px 12px; font-size: 13px; }
+  .uv-log li { padding: 8px 0; border-top: 1px solid #eef1f6; }
+  .uv-log li:first-child { border-top: 0; }
+  .uv-log-a { font-weight: 700; color: #0d1f45; }
+</style>
+</body></html>

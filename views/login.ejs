@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<%- include('partials/icons') %>
+<div class="auth">
+  <div class="auth-photo" role="img" aria-label="Camarines Sur Polytechnic Colleges campus"></div>
+  <div class="auth-panel">
+  <div class="login-card">
+    <div class="brand auth-brand">
+      <div class="bico"><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg></div>
+      <h1>BOARD<span>LINK</span></h1>
+    </div>
+    <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+    <% if (typeof notice !== 'undefined' && notice) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= notice %></div><% } %>
+    <p class="auth-sub">Sign into your account</p>
+    <form action="/login" method="POST">
+      <div class="fg">
+        <label for="loginEmail">Gmail address</label>
+        <input type="email" id="loginEmail" name="email" autocomplete="username" inputmode="email"
+               placeholder="yourname@gmail.com" value="<%= typeof email !== 'undefined' ? email : '' %>"
+               autofocus required>
+      </div>
+      <div class="fg">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" name="password" autocomplete="current-password"
+               placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn btn-full auth-btn">Sign in</button>
+    </form>
+    <% if (typeof googleEnabled !== 'undefined' && googleEnabled) { %>
+      <a href="/auth/google" class="btn btn-google btn-full auth-google"><%- include('partials/google-g') %> Sign in with Google</a>
+    <% } %>
+    <div class="login-links">
+      <a href="/forgot-password">Forgot password?</a>
+      <a href="/signup">Create an account</a>
+    </div>
+
+
+  </div>
+</div>
+</div>
+</body></html>

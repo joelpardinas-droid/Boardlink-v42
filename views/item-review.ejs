@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= item.item_title %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/item-review.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: video ? 'Watch Video' : 'Review Document'}) %>
+    <div class="page rv-page">
+
+      <nav class="rv-crumbs" aria-label="Agenda navigation">
+        <% if (typeof viaApproval !== 'undefined' && viaApproval) { %>
+          <a href="/archive/agendas#item-<%= item.item_id %>" class="btn btn-light btn-sm">
+            <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Digital Archive
+          </a>
+        <% } else { %>
+        <a href="/meeting/<%= meeting.meeting_id %>#item-<%= item.item_id %>" class="btn btn-light btn-sm">
+          <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to meeting
+        </a>
+        <% } %>
+        <span class="rv-crumbs-spacer"></span>
+        <% if (prevItem) { %>
+          <a class="btn btn-light btn-sm" href="/meeting/<%= meeting.meeting_id %>/item/<%= prevItem.item_id %>/review"
+             title="<%= prevItem.item_title %>">
+            <svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Item <%= prevItem.item_order %>
+          </a>
+        <% } %>
+        <% if (nextItem) { %>
+          <a class="btn btn-light btn-sm" href="/meeting/<%= meeting.meeting_id %>/item/<%= nextItem.item_id %>/review"
+             title="<%= nextItem.item_title %>">
+            Item <%= nextItem.item_order %> <svg class="icon"><use href="#i-arrow-right" xlink:href="#i-arrow-right"/></svg>
+          </a>
+        <% } %>
+      </nav>
+
+      <header class="rv-head">
+        <p class="rv-meeting"><%= meeting.title %></p>
+        <h1><span class="rv-num"><%= item.item_order %></span><%= item.item_title %></h1>
+        <p class="rv-facts">
+          <span class="badge <%= item.item_category === 'Previous Minutes' ? 'b-orange' : 'b-blue' %>"><%= item.item_category %></span>
+          <% if (video) { %><span class="badge b-orange">Video</span><span class="rv-file"><%= item.item_video_name %></span>
+          <% } else if (item.item_pdf_name) { %><span class="rv-file"><%= item.item_pdf_name %></span><% } %>
+          <% if (deadlineText) { %>
+            <span class="rv-deadline<%= deadlinePassed ? ' is-past' : '' %>">
+              <%= deadlinePassed ? 'Comment deadline passed' : 'Comments due' %> <%= deadlineText %>
+            </span>
+          <% } %>
+        </p>
+      </header>
+
+      <% if (typeof documentReworded !== 'undefined' && documentReworded) { %>
+        <div class="alert a-ok" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg>
+          <span>
+            The new document was saved.
+            <% if (documentReworded.moved) { %>
+              <%= documentReworded.moved %> comment<%= documentReworded.moved === 1 ? '' : 's' %>
+              followed <%= documentReworded.moved === 1 ? 'its' : 'their' %> words to the new place.
+            <% } %>
+            <% if (documentReworded.check) { %>
+              <%= documentReworded.check %> need<%= documentReworded.check === 1 ? 's' : '' %> a look —
+              marked “check this still marks the right place”.
+            <% } %>
+            <% if (documentReworded.lost) { %>
+              <%= documentReworded.lost %> <%= documentReworded.lost === 1 ? 'was' : 'were' %> about words
+              that are no longer in the document; <%= documentReworded.lost === 1 ? 'it is' : 'they are' %>
+              kept against the item with the old words shown.
+            <% } %>
+            <% if (documentReworded.lost) { %>
+              They are still open: press <strong>Done</strong> on a comment when you have answered it.
+            <% } %>
+            <% if (!documentReworded.moved && !documentReworded.check && !documentReworded.lost) { %>
+              No comments needed moving.
+            <% } %>
+          </span>
+        </div>
+      <% } %>
+      <% if (typeof documentSaved !== 'undefined' && documentSaved) { %>
+        <div class="alert a-ok" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg>
+          The document was saved. Comments moved with their pages; any comment whose page was removed is kept against the item.
+        </div>
+      <% } %>
+      <% if (typeof viaApproval !== 'undefined' && viaApproval) { %>
+        <div class="alert a-ok">
+          <svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg>
+          Approved<% if (approvedUntil) { %> until <%= new Date(approvedUntil).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }) %><% } %>.
+        </div>
+      <% } else if (frozen) { %>
+        <div class="alert a-warn">
+          <svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg>
+          This meeting is completed, so comments are read-only.
+        </div>
+      <% } %>
+
+      <% const _what = video ? 'video' : 'document'; %>
+      <% if ((hasPdf || video) && summaryView) {
+           const se = summaryView.entry, sj = summaryView.job;
+           const ss = se.summary;
+           const sp = ss && ss.status === 'done' ? parseItemSummary(ss.summary_text) : null;
+           const sRunning = sj && ['queued', 'running'].includes(sj.state); %>
+        <details class="card rv-summary" id="summary" <%= sp || se.queued || overview ? 'open' : '' %>>
+          <summary>
+            <svg class="icon"><use href="#i-cpu" xlink:href="#i-cpu"/></svg>
+            <span>AI summary of this <%= _what %></span>
+            <% if (se.queued) { %><span class="bf-queued">In progress</span><% } %>
+          </summary>
+          <div class="rv-summary-body">
+            <% if (se.queued) { %>
+              <p class="rv-summary-wait" data-summary-wait="<%= meeting.meeting_id %>" data-item="<%= item.item_id %>">
+                <span class="rv-spin" aria-hidden="true"></span>
+                The local AI is <%= video ? 'reading what was said in this video' : 'reading this document' %>. This page updates when the summary is ready.
+              </p>
+              <% if (sRunning && currentUser && (['admin', 'secretary'].includes(currentUser.role) || (sj.startedBy && String(sj.startedBy) === String(currentUser.id)))) { %>
+                <form method="POST" action="/meeting/<%= meeting.meeting_id %>/briefing/cancel"
+                      onsubmit="return confirm('Stop summarising? Summaries that are already finished are kept.');">
+                  <input type="hidden" name="return" value="<%= item.item_id %>">
+                  <button type="submit" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-x" xlink:href="#i-x"/></svg> Cancel</button>
+                </form>
+              <% } %>
+            <% } else if (sp) { %>
+              <% if (sp.summary) { %><p><%= sp.summary %></p><% } %>
+              <% if (sp.points.length) { %><ul><% sp.points.forEach(pt => { %><li><%= pt %></li><% }) %></ul><% } %>
+              <% if (sp.action) { %><p><strong>Action requested:</strong> <%= sp.action %></p><% } %>
+              <% if (ss.unverified && ss.unverified.length) { %>
+                <p class="rv-summary-warn">Check these figures against the document; they were not found in it: <%= ss.unverified.join(', ') %></p>
+              <% } %>
+              <% if (se.stale) { %><p class="rv-summary-warn">This item or its <%= _what %> changed after this summary was written.</p><% } %>
+              <p class="rv-summary-meta"><%= video ? 'Written by the local AI from what was said in the video. Check important details against the video.' : 'Written by the local AI from this document. Check important details against the pages below.' %></p>
+            <% } else if (aiState && !aiState.ok) { %>
+              <p class="rv-summary-warn"><%= aiState.message %></p>
+            <% } else if (ss && ss.status === 'no_text') { %>
+              <p class="rv-summary-warn"><%= ss.error_text || 'No readable text was found in this PDF.' %></p>
+            <% } else if (ss && ss.status === 'failed') { %>
+              <p class="rv-summary-warn">The last attempt failed: <%= ss.error_text || 'the local AI did not respond.' %></p>
+            <% } else { %>
+              <p class="rv-summary-meta"><%= video && item.item_video_status === 'processing' ? 'The summary is written once the video\'s subtitles are ready.' : 'This ' + _what + ' has not been summarised yet.' %></p>
+            <% } %>
+            <% if (!sp && overview) { %>
+              <div class="rv-overview">
+                <h4>Quick overview</h4>
+                <% if (overview.sections.length) { %>
+                  <p class="rv-ov-label">Main sections</p>
+                  <ul class="rv-ov-sections">
+                    <% overview.sections.forEach(function (o) { %><li><%= o.text %> <span class="rv-ov-page">p. <%= o.page %></span></li><% }) %>
+                  </ul>
+                <% } %>
+                <p class="rv-ov-label">Key sentences</p>
+                <ul>
+                  <% overview.sentences.forEach(function (o) { %><li>“<%= o.text %>” <span class="rv-ov-page">p. <%= o.page %></span></li><% }) %>
+                </ul>
+              </div>
+            <% } %>
+            <% if (!se.queued && !(video && item.item_video_status !== 'done') && !(typeof viaApproval !== 'undefined' && viaApproval)) { %>
+              <form method="POST" action="/meeting/<%= meeting.meeting_id %>/briefing">
+                <input type="hidden" name="only" value="<%= item.item_id %>">
+                <input type="hidden" name="return" value="review">
+                <button type="submit" class="btn btn-light btn-sm">
+                  <svg class="icon icon-sm"><use href="#i-sparkle" xlink:href="#i-sparkle"/></svg>
+                  <%= sp ? 'Summarise again' : 'Summarise this ' + _what %>
+                </button>
+                <% if (sRunning) { %><span class="rv-summary-meta">Another summary is being written; this one will follow it.</span><% } %>
+              </form>
+            <% } %>
+          </div>
+        </details>
+        <% if (se.queued) { %>
+          <script>
+            (function () {
+              var el = document.querySelector('[data-summary-wait]');
+              var id = el.getAttribute('data-summary-wait'), item = Number(el.getAttribute('data-item'));
+              function tick() {
+                fetch('/meeting/' + id + '/briefing/status', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                  .then(function (r) { return r.json(); })
+                  .then(function (d) {
+                    var j = d && d.job;
+                    var waiting = j && (j.state === 'queued' || j.state === 'running') && (j.pendingIds || []).indexOf(item) !== -1;
+                    if (!waiting) { window.location.hash = 'summary'; window.location.reload(); return; }
+                    setTimeout(tick, 4000);
+                  })
+                  .catch(function () { setTimeout(tick, 8000); });
+              }
+              setTimeout(tick, 3000);
+            })();
+          </script>
+        <% } %>
+      <% } %>
+
+      <% if (video) { %>
+        <%- include('partials/item-video', { video, item, meeting, canComment, isSecretary, frozen, userId }) %>
+      <% } else if (!hasPdf) { %>
+        <div class="card rv-empty">
+          <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg>
+          <h2>No document attached to this item</h2>
+          <p>
+            <% if (isSecretary && item.missingFile) { %>
+              <%= item.item_title %> has been removed or deleted. Attach it again.
+            <% } else if (isSecretary) { %>
+              Attach the item's PDF from the meeting page, under this agenda item.
+            <% } else { %>
+              The Board Secretary has not attached a document yet. You can still comment on the item from the meeting page.
+            <% } %>
+          </p>
+        </div>
+      <% } else { %>
+
+      <div id="review"
+           class="rv"
+           data-meeting="<%= meeting.meeting_id %>"
+           data-item="<%= item.item_id %>"
+           data-file="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/file"
+           data-can-comment="<%= canComment ? '1' : '0' %>"
+           data-previous-minutes="<%= item.item_category === 'Previous Minutes' ? '1' : '0' %>">
+
+        <section class="rv-doc" aria-label="Document">
+          <div class="rv-toolbar" role="toolbar" aria-label="Document tools">
+            <div class="rv-zoom">
+              <button type="button" class="btn btn-light btn-sm" data-zoom="out" aria-label="Zoom out">−</button>
+              <span id="rvZoomLabel" class="rv-zoom-label" aria-live="polite">100%</span>
+              <button type="button" class="btn btn-light btn-sm" data-zoom="in" aria-label="Zoom in">+</button>
+              <button type="button" class="btn btn-light btn-sm" data-zoom="fit">Fit width</button>
+            </div>
+            <% if (canComment) { %>
+              <button type="button" id="rvAreaBtn" class="btn btn-light btn-sm rv-area-btn" aria-pressed="false">
+                <svg class="icon"><use href="#i-target" xlink:href="#i-target"/></svg> Mark an area
+              </button>
+            <% } %>
+            <% if (isSecretary && !frozen) { %>
+              <a class="btn btn-light btn-sm" href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/edit">
+                <svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> <span class="rv-dl-text">Edit pages</span>
+              </a>
+              <a class="btn btn-light btn-sm" href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/document/words">
+                <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> <span class="rv-dl-text">Edit the words</span>
+              </a>
+            <% } %>
+            <a class="btn btn-light btn-sm" href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/file?download=1" aria-label="Download the PDF">
+              <svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> <span class="rv-dl-text">Download</span>
+            </a>
+          </div>
+
+          <p id="rvHint" class="rv-hint"></p>
+          <div id="rvOcr" class="rv-ocr" hidden></div>
+
+          <div id="rvPages" class="rv-pages" tabindex="0" aria-label="Document pages">
+            <div class="rv-loading" id="rvLoading">
+              <span class="rv-spin" aria-hidden="true"></span> Opening the document…
+            </div>
+          </div>
+
+          <button type="button" id="rvSelBtn" class="rv-selbtn" hidden>
+            <svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg> Comment
+          </button>
+        </section>
+
+        <aside class="rv-side" id="rvSide" aria-label="Comments">
+          <div class="rv-side-head">
+            <h2>Comments <span id="rvCount" class="rv-count">0</span></h2>
+            <button type="button" class="rv-side-close" id="rvSideClose" aria-label="Close comments">
+              <svg class="icon"><use href="#i-x" xlink:href="#i-x"/></svg>
+            </button>
+          </div>
+
+          <div id="rvList" class="rv-list" aria-live="polite">
+            <p class="rv-muted">Loading comments…</p>
+          </div>
+
+          <% if (canComment) { %>
+            <form id="rvComposer" class="rv-composer" autocomplete="off" data-no-spinner>
+              <div id="rvTarget" class="rv-target">
+                <span class="rv-target-label">Commenting on the item as a whole</span>
+              </div>
+              <label for="rvText" class="sr-only">Your comment</label>
+              <textarea id="rvText" rows="3" maxlength="4000" required
+                        placeholder="Write your comment…"></textarea>
+              <div class="rv-composer-row">
+                <span id="rvMsg" class="rv-msg" role="status"></span>
+                <button type="button" id="rvCancel" class="btn btn-light btn-sm" hidden>Cancel</button>
+                <button type="submit" class="btn btn-navy btn-sm" id="rvPost">Post comment</button>
+              </div>
+            </form>
+          <% } %>
+        </aside>
+
+        <button type="button" id="rvSideOpen" class="rv-side-open">
+          <svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg>
+          Comments <span id="rvCountFab">0</span>
+        </button>
+      </div>
+
+      <noscript>
+        <div class="alert a-warn">The document viewer needs JavaScript. You can still
+          <a href="/meeting/<%= meeting.meeting_id %>/item/<%= item.item_id %>/file">open the PDF</a>.</div>
+      </noscript>
+      <script type="module" src="/js/item-review.js"></script>
+      <% } %>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+# ============================================================
+# deploy/Caddyfile — reverse proxy + HTTPS for BOARDLINK
+# ============================================================
+#
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+#
+# Caddy obtains and renews a Let's Encrypt certificate on its
+# own, provided ports 80 and 443 reach this machine from the
+# internet and the DNS record for the name below points here.
+
+boardlink.cspc.edu.ph {
+    encode gzip
+
+    # Forward to the Node process on localhost. Caddy sets
+    # X-Forwarded-Proto, which is why server.js enables
+    # `trust proxy` — without it the secure session cookie is
+    # never set and nobody can sign in.
+    reverse_proxy 127.0.0.1:3000
+
+    # Scanned resolutions and meeting audio are large; allow
+    # generous uploads and give OCR/transcription time to finish.
+    request_body {
+        max_size 100MB
+    }
+    timeouts {
+        read_body 10m
+    }
+
+    log {
+        output file /var/log/caddy/boardlink.log {
+            roll_size 20MB
+            roll_keep 10
+        }
+    }
+}
+
+# --- LAN-only alternative -----------------------------------
+# Before a public domain exists, serve over HTTPS on the campus
+# network using Caddy's internal CA. Browsers will warn unless
+# the CA certificate is installed on each device, but traffic is
+# still encrypted. Comment out the block above and use this:
+#
+# boardlink.local {
+#     tls internal
+#     reverse_proxy 127.0.0.1:3000
+# }

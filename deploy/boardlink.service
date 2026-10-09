@@ -1,0 +1,56 @@
+# ============================================================
+# deploy/boardlink.service — systemd unit for BOARDLINK
+# ============================================================
+#
+#   sudo cp deploy/boardlink.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now boardlink
+#
+# Check status:  systemctl status boardlink
+# Follow logs:   journalctl -u boardlink -f
+
+[Unit]
+Description=BOARDLINK — Board Governance Platform (CSPC)
+Documentation=https://cspc.edu.ph
+# Start only once the network and the database are up; without
+# these the first boot after a power cut races MySQL and the app
+# comes up unable to read any records.
+After=network-online.target mysql.service
+Wants=network-online.target
+Requires=mysql.service
+
+[Service]
+Type=simple
+User=boardlink
+Group=boardlink
+WorkingDirectory=/opt/boardlink
+EnvironmentFile=/opt/boardlink/.env
+ExecStart=/usr/bin/node server.js
+
+# Restart on failure. Brownouts are a fact of life on campus, so
+# the service must come back by itself rather than waiting for
+# someone to notice it is down.
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=boardlink
+
+# --- Hardening ---------------------------------------------
+# The process holds board records, so limit what it can reach
+# if it is ever compromised.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Only these paths stay writable.
+ReadWritePaths=/opt/boardlink/uploads /opt/boardlink/backups /opt/boardlink/logs
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

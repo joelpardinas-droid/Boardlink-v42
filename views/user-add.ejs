@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Add User | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Add User'}) %>
+    <div class="page">
+      <div class="ph"><div><h1><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Add New User</h1><p><a href="/users" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Users</a></p></div></div>
+      <div class="card" style="max-width:540px">
+        <div class="ch"><h3><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> User Details</h3></div>
+        <div class="cb">
+          <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+          <% if (success) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= success %></div><% } %>
+          <form action="/users/add" method="POST">
+            <div class="fg"><label>Full Name *</label><input type="text" name="fullName" placeholder="e.g. Dr. Maria Reyes" required></div>
+            <div class="fg"><label>Username *</label><input type="text" name="username" placeholder="e.g. mreyes" required></div>
+            <div class="fg"><label>Gmail Address *</label><input type="email" name="email" placeholder="e.g. maria.reyes@gmail.com" autocomplete="off" required></div>
+            <div class="fg">
+              <label for="accountType">Account Type *</label>
+              <select name="accountType" id="accountType" required>
+                <option value="">— Select Account Type —</option>
+                <% accountTypes.forEach(t => { %>
+                  <option value="<%= t.key %>"><%= t.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="row mt14">
+              <button type="submit" class="btn btn-navy"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Add User</button>
+              <a href="/users" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

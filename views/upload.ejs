@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <% const _doc = typeof kind !== 'undefined' && kind === 'document'; const _label = _doc ? 'Upload Documents' : 'Upload Resolution'; const _back = _doc ? '/archive/documents' : '/archive'; %>
+  <title><%= _label %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: _label}) %>
+    <div class="page">
+      <div class="ph"><div><h1><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> <%= _label %></h1><p><a href="<%= _back %>" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to <%= _doc ? 'Documents' : 'Board Resolutions' %></a></p></div></div>
+      <% if (typeof attachTo !== 'undefined' && attachTo) { %>
+      <%
+        const _picksA = typeof picks !== 'undefined' && picks ? picks : { others: [] };
+      %>
+      <div class="card" style="max-width:760px">
+        <div class="ch"><h3><svg class="icon"><use href="#i-clip" xlink:href="#i-clip"/></svg> Add approved documents</h3></div>
+        <div class="cb">
+          <%if(error){%><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%=error%></div><%}%>
+          <div class="att-to">
+            <div class="fw7">Resolution No. <%= attachTo.category || '—' %></div>
+            <div class="fs13"><%= attachTo.title %></div>
+          </div>
+          <form action="/archive/<%= attachTo.document_id %>/attach-upload" method="POST" enctype="multipart/form-data" id="attachForm">
+            <%- include('partials/approved-docs', { picks: _picksA, exclude: attachedIds || [], resDocId: attachTo.document_id, hint: attachTo.title }) %>
+            <div class="row mt14">
+              <button type="submit" class="btn btn-navy" id="attachSave"><svg class="icon"><use href="#i-save" xlink:href="#i-save"/></svg> Save approved documents</button>
+              <a href="/archive/<%= attachTo.document_id %>" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+      <style>
+        .att-to { border-left: 3px solid #c8922a; background: #fffaf0; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; line-height: 1.5; }
+      </style>
+      <script>
+        document.getElementById('attachForm').addEventListener('submit', function (e) {
+          if (!window.boardlinkApprovedCount()) { e.preventDefault(); return; }
+          document.getElementById('attachSave').lastChild.textContent = ' Saving…';
+        });
+      </script>
+      <% } else { %>
+      <div class="card" style="max-width:660px">
+        <div class="ch"><h3><svg class="icon"><use href="#i-upload" xlink:href="#i-upload"/></svg> <%= _doc ? 'Document' : 'Board Resolution' %></h3></div>
+        <div class="cb">
+          <%if(error){%><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%=error%></div><%}%>
+          <%if(success){%><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <span><%=success%>
+            <% if (typeof savedId !== 'undefined' && savedId) { %> <a href="/archive/<%= savedId %>"><%= _doc ? 'Open it' : 'Open it to attach its approved documents' %></a><% } %></span></div><%}%>
+
+          <form action="/archive/upload" method="POST" enctype="multipart/form-data" id="uploadForm" data-kind="<%= _doc ? 'document' : 'resolution' %>">
+            <input type="hidden" name="kind" value="<%= _doc ? 'document' : 'resolution' %>">
+
+            <!-- Step 1 — the file comes first, because everything below
+                 is filled in from it automatically. -->
+            <div class="fg">
+              <label><%= _doc ? 'The document' : 'The signed resolution' %> (PDF or scanned image) *</label>
+              <input type="file" id="fileInput" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+              <% if (typeof drivePicker !== 'undefined' && drivePicker) { %>
+                <div class="drv-or"><span>or</span></div>
+                <button type="button" class="btn btn-light drv-btn" id="driveBtn">
+                  <svg viewBox="0 0 87.3 78" width="18" height="16" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+                  Add from Google Drive
+                </button>
+                <p id="driveName" class="drv-name" hidden></p>
+              <% } %>
+            </div>
+
+            <!-- Live status while OCR runs -->
+            <div id="scanStatus" style="display:none" class="alert a-warn">
+              <span class="scan-spin" aria-hidden="true"></span>
+              <span id="scanStatusText">Reading the document…</span>
+            </div>
+            <div id="scanDone" style="display:none" class="alert a-ok">
+              <svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg>
+              <span id="scanDoneText"></span>
+            </div>
+
+            <!-- Shown when the scan is a minutes excerpt containing more
+                 than one resolution. The archive stores one resolution
+                 per record, so the uploader is told explicitly which one
+                 is being saved and what else the file contains. -->
+            <% if (!_doc) { %>
+            <div id="multiRes" style="display:none" class="alert a-warn">
+              <div style="font-weight:700;margin-bottom:5px">
+                <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+                <span id="multiResCount"></span>
+              </div>
+              <div style="font-size:12px;line-height:1.55;margin-bottom:7px">
+                This file is a minutes excerpt covering several resolutions. The form below is
+                filled in with the <strong>first</strong> one. Upload the file again for each of
+                the others, changing the number and title each time, so every resolution is
+                searchable on its own.
+              </div>
+              <ul id="multiResList" style="margin:0;padding-left:18px;font-size:12px;line-height:1.7"></ul>
+            </div>
+            <% } %>
+
+            <input type="hidden" name="uploadedFile" id="uploadedFile" value="">
+            <% const _bodies = ['Board of Trustees', 'Academic Council', 'Administrative Council', 'RIC Council']; %>
+            <% if (!_doc) { %>
+              <%# Board Resolution: number, title, year, board / council %>
+              <input type="hidden" name="docType" value="Resolution">
+              <div class="g2">
+                <div class="fg">
+                  <label for="f-number">Resolution No. * <span class="auto-tag" id="tag-number">auto-detected</span></label>
+                  <input type="text" id="f-number" name="docCategory" placeholder="e.g. 2026-21" required>
+                </div>
+                <div class="fg">
+                  <label for="f-year">Year * <span class="auto-tag" id="tag-year">auto-detected</span></label>
+                  <input type="number" id="f-year" name="docYear" placeholder="e.g. 2026" min="1985" max="2100" required>
+                </div>
+              </div>
+              <div class="fg">
+                <label for="f-title">Title * <span class="auto-tag" id="tag-title">auto-detected</span></label>
+                <input type="text" id="f-title" name="docTitle" placeholder="e.g. Approving the FY 2027 Budget" required>
+              </div>
+              <div class="fg">
+                <label for="f-body">Approved by *</label>
+                <select id="f-body" name="governingBody" required>
+                  <% _bodies.forEach(function (b) { %><option value="<%= b %>"><%= b %></option><% }) %>
+                </select>
+              </div>
+            <% } else { %>
+              <%# Document: type, title, reference no., year, board / council, the resolution that approved it %>
+              <div class="g2">
+                <div class="fg">
+                  <label for="f-type">Type *</label>
+                  <select id="f-type" name="docType" required>
+                    <% ['Manual', 'Policy', 'Memorandum', 'Other'].forEach(function (t) { %><option value="<%= t %>"><%= t %></option><% }) %>
+                  </select>
+                </div>
+                <div class="fg">
+                  <label for="f-year">Year * <span class="auto-tag" id="tag-year">auto-detected</span></label>
+                  <input type="number" id="f-year" name="docYear" placeholder="e.g. 2026" min="1985" max="2100" required>
+                </div>
+              </div>
+              <div class="fg">
+                <label for="f-title">Title * <span class="auto-tag" id="tag-title">auto-detected</span></label>
+                <input type="text" id="f-title" name="docTitle" placeholder="e.g. ICTU Operations Manual" required>
+              </div>
+              <div class="g2">
+                <div class="fg">
+                  <label for="f-number">Reference No.</label>
+                  <input type="text" id="f-number" name="docCategory" placeholder="e.g. MICT-OM-2026">
+                </div>
+                <div class="fg">
+                  <label for="f-body">Board / council *</label>
+                  <select id="f-body" name="governingBody" required>
+                    <% _bodies.forEach(function (b) { %><option value="<%= b %>"><%= b %></option><% }) %>
+                  </select>
+                </div>
+              </div>
+              <%
+                const _picks = typeof picks !== 'undefined' && picks ? picks : { resolutions: [], others: [] };
+                const _nm = x => 'Resolution No. ' + (x.category || '—') + ': ' + x.title;
+                const _opts = list => { let y = null, h = ''; list.forEach(x => { if (x.doc_year !== y) { if (y !== null) h += '</optgroup>'; y = x.doc_year; h += '<optgroup label="' + y + '">'; }
+                    h += '<option value="' + x.document_id + '">' + String(_nm(x)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') + '</option>'; }); if (y !== null) h += '</optgroup>'; return h; };
+              %>
+              <div class="fg">
+                <label for="f-approved-by">Approved by resolution</label>
+                <select id="f-approved-by" name="approvedById">
+                  <option value="">None</option>
+                  <%- _opts(_picks.resolutions) %>
+                </select>
+              </div>
+            <% } %>
+
+            <div class="row mt14">
+              <button type="submit" class="btn btn-navy"><svg class="icon"><use href="#i-save" xlink:href="#i-save"/></svg> Save to Archive</button>
+              <a href="<%= _back %>" class="btn btn-light">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Small "auto-detected" pill shown next to a label once the system
+     has filled that field in from the scan. Hidden until then. */
+  .auto-tag {
+    display: none; margin-left: 6px; padding: 2px 7px; border-radius: 20px;
+    background: #dff5ed; color: #1a8f5c; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .4px; vertical-align: 1px;
+  }
+  .auto-tag.show { display: inline-block; animation: fadeup .25s var(--ease-out) both; }
+  .auto-tag.miss { background: #fef4df; color: #d97706; }
+  .field-filled input, .field-filled textarea {
+    border-color: #86d6b6; background: #fbfffd;
+  }
+  .scan-spin {
+    display: inline-block; width: 13px; height: 13px; vertical-align: -2px;
+    margin-right: 7px; border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%; animation: spin .6s linear infinite;
+  }
+</style>
+
+<style>
+  .pick-list { max-height: 220px; overflow: auto; border: 1px solid #e3e7f0; border-radius: 8px; padding: 4px 0; background: #fff; }
+  .pick-year { font-size: 11px; font-weight: 700; color: #94a3b8; padding: 6px 10px 2px; text-transform: uppercase; letter-spacing: .04em; }
+  .fg .pick-item, .pick-item { display: flex; gap: 8px; align-items: flex-start; padding: 5px 10px; font-size: 12.5px; line-height: 1.4; cursor: pointer; font-weight: 400; color: #334155; }
+  .pick-item:hover { background: #f8fafc; }
+  .pick-item input { margin-top: 2px; flex: 0 0 auto; width: auto; }
+</style>
+<script>
+(function () {
+  var f = document.getElementById('pickFilter'), list = document.getElementById('pickList'), out = document.getElementById('pickCount');
+  if (!list) return;
+  if (f) f.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });   // do not save the form
+  if (f) f.addEventListener('input', function () {
+    var q = f.value.toLowerCase().trim();
+    list.querySelectorAll('.pick-item').forEach(function (it) { it.style.display = !q || it.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
+  });
+  list.addEventListener('change', function () { var n = list.querySelectorAll('input:checked').length; out.textContent = n ? n + ' ticked' : 'none ticked'; });
+})();
+(function () {
+  var fileInput = document.getElementById('fileInput');
+  var form      = document.getElementById('uploadForm');
+  if (!fileInput || !form) return;
+
+  var statusBox  = document.getElementById('scanStatus');
+  var statusText = document.getElementById('scanStatusText');
+  var doneBox    = document.getElementById('scanDone');
+  var doneText   = document.getElementById('scanDoneText');
+
+  var isRes = form.dataset.kind !== 'document';
+  var FIELDS = { title: document.getElementById('f-title'), year: document.getElementById('f-year') };
+  var TAGS   = { title: document.getElementById('tag-title'), year: document.getElementById('tag-year') };
+  if (isRes) { FIELDS.number = document.getElementById('f-number'); TAGS.number = document.getElementById('tag-number'); }
+
+  function resetTags() {
+    Object.keys(TAGS).forEach(function (k) {
+      TAGS[k].className = 'auto-tag';
+      TAGS[k].textContent = 'auto-detected';
+      if (FIELDS[k]) FIELDS[k].parentNode.classList.remove('field-filled');
+    });
+    doneBox.style.display = 'none';
+    var mr = document.getElementById('multiRes');
+    if (mr) mr.style.display = 'none';
+  }
+
+  // Fills the form from what BOARDLINK read in the file. Used for a file
+  // chosen from this computer and for one added from Google Drive.
+  function applyResult(res) {
+        statusBox.style.display = 'none';
+        if (!res || !res.ok) {
+          doneBox.className = 'alert a-warn';
+          doneText.textContent = (res && res.error) || 'The document could not be read. Please fill in the details manually.';
+          doneBox.style.display = 'block';
+          return;
+        }
+
+        document.getElementById('uploadedFile').value = res.uploadedFile || '';
+
+        // Report every resolution found, so none is lost silently.
+        var multi = document.getElementById('multiRes');
+        if (multi && res.resolutionCount && res.resolutionCount > 1) {
+          document.getElementById('multiResCount').textContent =
+            res.resolutionCount + ' resolutions found in this file';
+          var ul = document.getElementById('multiResList');
+          ul.innerHTML = '';
+          res.resolutions.forEach(function (r, i) {
+            var li = document.createElement('li');
+            li.textContent = 'No. ' + r.number + ' — ' + (r.title || '(untitled)') +
+                             (i === 0 ? '  ← filled in below' : '');
+            if (i === 0) li.style.fontWeight = '700';
+            ul.appendChild(li);
+          });
+          multi.style.display = 'block';
+        } else if (multi) {
+          multi.style.display = 'none';
+        }
+
+        // Only fill fields the user has not already typed into, so a
+        // re-scan never destroys their own corrections.
+        var filled = 0;
+        Object.keys(FIELDS).forEach(function (key) {
+          var el = FIELDS[key];
+          var val = res.fields ? res.fields[key] : '';
+          if (!el) return;
+          if (val && !el.value.trim()) {
+            el.value = val;
+            el.parentNode.classList.add('field-filled');
+            TAGS[key].className = 'auto-tag show';
+            TAGS[key].textContent = 'auto-detected';
+            filled++;
+          } else if (!val) {
+            TAGS[key].className = 'auto-tag miss show';
+            TAGS[key].textContent = 'needs review';
+          }
+        });
+
+        doneBox.className = 'alert a-ok';
+        if (res.ocrAvailable === false) {
+          doneBox.className = 'alert a-warn';
+          doneText.textContent = res.note || 'Text could not be read. Please enter the details manually.';
+        } else {
+          var msg = filled + ' field' + (filled === 1 ? '' : 's') + ' filled in from the scan.';
+          if (res.confidence != null) msg += ' OCR confidence ' + res.confidence + '%.';
+          if (res.totalPages && res.totalPages > 1) {
+            msg += ' Read page ' + (res.pagesRead || 1) + ' of ' + res.totalPages +
+                   ' (the details are on the first page).';
+          }
+          if (res.review && res.review.length) {
+            msg += ' Please check the field' + (res.review.length === 1 ? '' : 's') +
+                   ' marked "needs review".';
+          } else {
+            msg += ' Please review before saving.';
+          }
+          doneText.textContent = msg;
+        }
+        doneBox.style.display = 'block';
+  }
+  window.boardlinkApplyResult = applyResult;
+  window.boardlinkShowReading = function (label) {
+    resetTags();
+    statusText.textContent = label;
+    statusBox.style.display = 'block';
+  };
+  window.boardlinkShowError = function (msg) {
+    statusBox.style.display = 'none';
+    doneBox.className = 'alert a-warn';
+    doneText.textContent = msg;
+    doneBox.style.display = 'block';
+  };
+
+  fileInput.addEventListener('change', function () {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+
+    resetTags();
+    statusText.textContent = 'Reading "' + file.name + '" — this can take a moment for large scans…';
+    statusBox.style.display = 'block';
+
+    var data = new FormData();
+    data.append('file', file);
+
+    fetch('/archive/analyze', { method: 'POST', body: data, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(applyResult)
+      .catch(function () {
+        statusBox.style.display = 'none';
+        doneBox.className = 'alert a-warn';
+        doneText.textContent = 'Could not analyse the document automatically. Please fill in the details manually.';
+        doneBox.style.display = 'block';
+      });
+  });
+})();
+</script>
+<% if (typeof drivePicker !== 'undefined' && drivePicker && !(typeof attachTo !== 'undefined' && attachTo)) { %>
+<script>
+/* "Add from Google Drive" — Google's own file picker. The Board
+   Secretary signs in with Google (only the first time) and picks a file;
+   BOARDLINK is allowed to see ONLY that file (drive.file permission).
+   The file is copied into BOARDLINK and read like an upload. */
+(function () {
+  var CFG = <%- JSON.stringify(drivePicker) %>;
+  var btn = document.getElementById('driveBtn');
+  var nameEl = document.getElementById('driveName');
+  var token = null, tokenClient = null, pickerReady = false;
+  function load(src, cb) { var s = document.createElement('script'); s.src = src; s.async = true; s.onload = cb;
+    s.onerror = function () { window.boardlinkShowError('Google Drive could not be reached. Check the internet connection.'); }; document.head.appendChild(s); }
+  function openPicker() {
+    var view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      .setMimeTypes('application/pdf,image/jpeg,image/png,application/vnd.google-apps.document,application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      .setIncludeFolders(true).setSelectFolderEnabled(false);
+    var b = new google.picker.PickerBuilder().addView(view).setOAuthToken(token).setDeveloperKey(CFG.apiKey)
+      .setTitle(<%- JSON.stringify(_doc ? 'Choose a document to add to the Digital Archive' : 'Choose a resolution to add to the Digital Archive') %>).setCallback(picked);
+    if (CFG.appId) b.setAppId(CFG.appId);
+    b.build().setVisible(true);
+  }
+  function picked(data) {
+    if (data.action !== google.picker.Action.PICKED || !data.docs || !data.docs.length) return;
+    var doc = data.docs[0];
+    nameEl.hidden = false; nameEl.textContent = 'From Google Drive: ' + doc.name;
+    window.boardlinkShowReading('Copying "' + doc.name + '" from Google Drive and reading it…');
+    fetch('/archive/drive-import', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ fileId: doc.id, accessToken: token })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (!res || !res.ok) { window.boardlinkShowError((res && res.error) || 'The file could not be added.'); return; }
+      // The file is already stored, so the computer file box is not needed.
+      var fi = document.getElementById('fileInput'); fi.required = false; fi.value = '';
+      window.boardlinkApplyResult(res);
+    }).catch(function () { window.boardlinkShowError('The file could not be copied from Google Drive.'); });
+  }
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    var go = function () { btn.disabled = false; if (token) openPicker(); else tokenClient.requestAccessToken({ prompt: '' }); };
+    if (tokenClient && pickerReady) return go();
+    load('https://accounts.google.com/gsi/client', function () {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CFG.clientId, scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: function (r) { if (r && r.access_token) { token = r.access_token; openPicker(); } }
+      });
+      load('https://apis.google.com/js/api.js', function () {
+        gapi.load('picker', function () { pickerReady = true; go(); });
+      });
+    });
+  });
+})();
+</script>
+<% } %>
+</body></html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>User Account Logs | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'User Account Logs'}) %>
+    <div class="page">
+      <%
+        const _when = d => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Manila' });
+        const _tone = a => ({ sign_in_failed: 'b-red', removed: 'b-red', deleted_mistake: 'b-red', turned_down: 'b-red',
+                              signed_in: 'b-green', approved: 'b-green', brought_back: 'b-green', added: 'b-green',
+                              signed_up: 'b-orange', type_changed: 'b-purple', password_reset: 'b-purple' })[a] || 'b-blue';
+        const _q = extra => { const p = new URLSearchParams(); ['q', 'action', 'from', 'to'].forEach(k => { if (f[k]) p.set(k, f[k]); });
+                              Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v)); return '/users/logs?' + p.toString(); };
+      %>
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> User Account Logs</h1>
+        </div>
+        <a href="/users" class="btn btn-light"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> User Management</a>
+      </div>
+
+      <form action="/users/logs" method="GET">
+        <div class="sbar ul-filters">
+          <input type="text" name="q" value="<%= f.q %>" placeholder="Search a name or Gmail address">
+          <select name="action" aria-label="What happened">
+            <option value="">Everything</option>
+            <% Object.entries(actions).forEach(function ([k, label]) { %>
+              <option value="<%= k %>" <%= f.action === k ? 'selected' : '' %>><%= label %></option>
+            <% }) %>
+          </select>
+          <label class="ul-date">From <input type="date" name="from" value="<%= f.from %>"></label>
+          <label class="ul-date">To <input type="date" name="to" value="<%= f.to %>"></label>
+          <button type="submit" class="btn btn-navy btn-sm">Show</button>
+          <a href="/users/logs" class="btn btn-light btn-sm">Clear</a>
+        </div>
+      </form>
+
+      <div class="card">
+        <div class="ch">
+          <h3><svg class="icon"><use href="#i-shield" xlink:href="#i-shield"/></svg> Logs</h3>
+          <span class="muted fs12"><%= total %> record<%= total === 1 ? '' : 's' %></span>
+        </div>
+        <% if (failed) { %>
+          <div class="cb"><div class="alert a-warn" style="margin:0">The database cannot be reached, so the logs cannot be shown.</div></div>
+        <% } else if (!rows.length) { %>
+          <div class="cb muted fs13">No logs match.</div>
+        <% } else { %>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Date and time</th><th>Account</th><th>What happened</th><th>Details</th><th>Done by</th><th>IP address</th></tr></thead>
+            <tbody>
+              <% rows.forEach(function (l) { %>
+                <tr>
+                  <td class="muted fs12" data-label="Date and time" style="white-space:nowrap"><%= _when(l.created_at) %></td>
+                  <td data-label="Account">
+                    <% if (l.user_id) { %><a href="/users/<%= l.user_id %>" class="fw7"><%= l.user_name || l.user_email %></a><% } else { %><span class="fw7"><%= l.user_name || '—' %></span><% } %>
+                    <div class="muted fs12"><%= l.user_email || '' %></div>
+                  </td>
+                  <td data-label="What happened"><span class="badge <%= _tone(l.action) %>"><%= actions[l.action] || l.action %></span></td>
+                  <td class="fs12" data-label="Details"><%= l.details || '—' %></td>
+                  <td class="fs12" data-label="Done by"><%= l.actor_name || (['signed_in', 'sign_in_failed', 'signed_out', 'signed_up', 'password_reset'].includes(l.action) ? 'The person' : '—') %></td>
+                  <td class="muted fs12" data-label="IP address"><%= l.ip_address || '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% if (pages > 1) { %>
+          <div class="ul-pages">
+            <% if (page > 1) { %><a class="btn btn-light btn-sm" href="<%= _q({ page: page - 1 }) %>">Newer</a><% } %>
+            <span class="muted fs12">Page <%= page %> of <%= pages %></span>
+            <% if (page < pages) { %><a class="btn btn-light btn-sm" href="<%= _q({ page: page + 1 }) %>">Older</a><% } %>
+          </div>
+        <% } %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  .ul-filters { flex-wrap: wrap; }
+  .ul-filters select { flex: 0 0 auto; width: auto; min-width: 190px; }
+  .ul-date { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
+  .ul-date input { width: auto; }
+  .ul-pages { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px; border-top: 1px solid #eef1f6; }
+</style>
+</body></html>

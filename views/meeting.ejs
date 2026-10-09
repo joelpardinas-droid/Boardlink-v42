@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meeting Records | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .row-actions { white-space: nowrap; }
+    .row-actions .btn + .btn { margin-left: 4px; }
+    .row-actions .row-del { color: #c0392b; }
+    .type-pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+    .type-bot  { background:#fef3c7; color:#92400e; }
+    .type-adm  { background:#e0e7ff; color:#3730a3; }
+    .type-aca  { background:#dcfce7; color:#166534; }
+    .type-ric  { background:#fce7f3; color:#9d174d; }
+
+    .body-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+    .body-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 20px; border: 1px solid #d5dbe7;
+                background: #fff; color: #334155; font-size: 13px; font-weight: 600; text-decoration: none; }
+    .body-tab:hover { border-color: #1a3d80; color: #0d1f45; }
+    .body-tab .n { font-size: 11px; background: #eef1f6; color: #64748b; border-radius: 10px; padding: 0 7px; }
+    .body-tab.is-on { background: #0d1f45; border-color: #0d1f45; color: #fff; }
+    .body-tab.is-on .n { background: rgba(255,255,255,.2); color: #fff; }
+    .bc-drop { position: relative; }
+    .bc-drop > summary { list-style: none; cursor: pointer; }
+    .bc-drop > summary::-webkit-details-marker { display: none; }
+    .bc-caret { transition: transform .15s ease; }
+    .bc-drop[open] .bc-caret { transform: rotate(180deg); }
+    .bc-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; min-width: 230px; background: #fff;
+               border: 1px solid #d5dbe7; border-radius: 10px; box-shadow: 0 10px 28px rgba(13,31,69,.14); padding: 6px; }
+    .bc-menu a { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px;
+                 font-size: 13px; font-weight: 600; color: #334155; text-decoration: none; }
+    .bc-menu a:hover { background: #f1f5fd; color: #0d1f45; }
+    .bc-menu a.is-on { background: #0d1f45; color: #fff; }
+    .bc-menu a .n { font-size: 11px; background: #eef1f6; color: #64748b; border-radius: 10px; padding: 0 7px; }
+    .bc-menu a.is-on .n { background: rgba(255,255,255,.2); color: #fff; }
+
+    .scope-banner {
+      background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .scope-banner .ico {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: #4338ca; color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .scope-banner .info { flex: 1; }
+    .scope-banner .info .t { font-size: 13px; font-weight: 700; color: #312e81; margin-bottom: 2px; }
+    .scope-banner .info .d { font-size: 12px; color: #4338ca; line-height: 1.45; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Meeting Records'}) %>
+    <div class="page">
+
+      <%
+        // Friendly council label for the scope banner
+        let scopeLabel = null;
+        if (userRole === 'member') {
+          if (userCouncilType === 'BOT')      scopeLabel = 'Board of Trustees';
+          else if (userCouncilType === 'ADMIN')    scopeLabel = 'Administrative Council';
+          else if (userCouncilType === 'ACADEMIC') scopeLabel = 'Academic Council';
+          else if (userCouncilType === 'RIC')      scopeLabel = 'RIC Council';
+        }
+      %>
+
+      <div class="ph">
+        <div>
+          <h1><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> Meeting Records</h1>
+          <% if (scopeLabel) { %><p>Meetings for the <strong><%= scopeLabel %></strong></p><% } %>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <% if (['admin','secretary'].includes(userRole)) { %>
+            <a href="/meeting/create" class="btn btn-gold"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Create Meeting</a>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (scopeLabel) { %>
+        <div class="scope-banner">
+          <div class="ico"><svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg></div>
+          <div class="info">
+            <div class="t">You are viewing <%= scopeLabel %> meetings only</div>
+          </div>
+        </div>
+      <% } %>
+
+      <%
+        function typeClass(t) {
+          switch (t) {
+            case 'Board of Trustees':       return 'type-pill type-bot';
+            case 'Administrative Council':  return 'type-pill type-adm';
+            case 'Academic Council':        return 'type-pill type-aca';
+            case 'RIC Council':             return 'type-pill type-ric';
+            default:                        return 'type-pill';
+          }
+        }
+        function statusClass(s) {
+          if (s === 'Completed')   return 'b-green';
+          if (s === 'Cancelled')   return 'b-red';
+          if (s === 'In-Session')  return 'b-orange';
+          return 'b-blue';
+        }
+      %>
+
+      <% if (typeof deletedNumber !== 'undefined' && deletedNumber) { %>
+        <div class="alert a-ok" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg>
+          Meeting <%= deletedNumber %> was deleted.
+        </div>
+      <% } %>
+
+      <% const _f = typeof bodyFilter !== 'undefined' ? bodyFilter : '';
+         const _c = typeof bodyCounts !== 'undefined' ? bodyCounts : { all: meetings.length };
+         const _label = { bot: 'Board of Trustees', councils: 'Board of Councils', academic: 'Academic Council', admin: 'Administrative Council', ric: 'RIC Council' };
+         const _href = k => '/meeting' + (k ? '?body=' + k : '');
+         const _councils = [['councils', 'All councils'], ['academic', 'Academic Council'], ['admin', 'Administrative Council'], ['ric', 'RIC Council']];
+         const _short = { academic: 'Academic', admin: 'Administrative', ric: 'RIC' };
+         const _inCouncils = ['councils', 'academic', 'admin', 'ric'].includes(_f); %>
+      <% if (!scopeLabel) { %>
+        <!-- Sort the meetings: all, the Board of Trustees, or the Board of
+             Councils (a dropdown to pick one council). -->
+        <nav class="body-tabs" aria-label="Show meetings of">
+          <a href="<%= _href('') %>" class="body-tab <%= !_f ? 'is-on' : '' %>" <%= !_f ? 'aria-current=page' : '' %>>All meetings <span class="n"><%= _c.all || 0 %></span></a>
+          <a href="<%= _href('bot') %>" class="body-tab <%= _f === 'bot' ? 'is-on' : '' %>" <%= _f === 'bot' ? 'aria-current=page' : '' %>>Board of Trustees <span class="n"><%= _c.bot || 0 %></span></a>
+          <details class="bc-drop">
+            <summary class="body-tab <%= _inCouncils ? 'is-on' : '' %>">
+              Board of Councils<%= _short[_f] ? ': ' + _short[_f] : '' %>
+              <span class="n"><%= _c[_short[_f] ? _f : 'councils'] || 0 %></span>
+              <svg class="icon icon-sm bc-caret"><use href="#i-chevron-down" xlink:href="#i-chevron-down"/></svg>
+            </summary>
+            <div class="bc-menu" role="menu">
+              <% _councils.forEach(function (c) { %>
+                <a role="menuitem" href="<%= _href(c[0]) %>" class="<%= _f === c[0] ? 'is-on' : '' %>"><%= c[1] %> <span class="n"><%= _c[c[0]] || 0 %></span></a>
+              <% }) %>
+            </div>
+          </details>
+        </nav>
+      <% } %>
+
+      <% if ((!meetings || meetings.length === 0) && _f) { %>
+        <div class="empty">
+          <div class="ei"><svg class="icon"><use href="#i-inbox" xlink:href="#i-inbox"/></svg></div>
+          <h3>No <%= _label[_f] %> meetings</h3>
+          <p><a href="/meeting">Show all meetings</a></p>
+        </div>
+      <% } else if (!meetings || meetings.length === 0) { %>
+        <div class="empty">
+          <div class="ei"><svg class="icon"><use href="#i-inbox" xlink:href="#i-inbox"/></svg></div>
+          <% if (scopeLabel) { %>
+            <h3>No <%= scopeLabel %> meetings yet</h3>
+          <% } else { %>
+            <h3>No meetings yet</h3>
+          <% } %>
+          <% if (['admin','secretary'].includes(userRole)) { %>
+            <a href="/meeting/create" class="btn btn-gold"><svg class="icon"><use href="#i-plus" xlink:href="#i-plus"/></svg> Create your first meeting</a>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="card">
+          <div class="ch">
+            <h3><svg class="icon"><use href="#i-calendar" xlink:href="#i-calendar"/></svg> <%= scopeLabel ? scopeLabel + ' Meetings' : (_f ? _label[_f] + ' Meetings' : 'All Meetings') %> (<%= meetings.length %>)</h3>
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Number</th>
+                  <th>Venue</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% meetings.forEach(m => { %>
+                  <tr>
+                    <td style="white-space:nowrap" data-label="Date"><%= new Date(m.meeting_date).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) %></td>
+                    <td data-label="Title"><strong><%= m.title %></strong></td>
+                    <td data-label="Type"><span class="<%= typeClass(m.meeting_type) %>"><%= m.meeting_type %></span></td>
+                    <td class="muted fs12" data-label="Number"><%= m.meeting_number %></td>
+                    <td class="fs12" data-label="Venue"><%= m.venue %></td>
+                    <td data-label="Status"><span class="badge <%= statusClass(m.status) %>"><%= m.status %></span></td>
+                    <td class="row-actions">
+                      <a href="/meeting/<%= m.meeting_id %>" class="btn btn-light btn-sm">View</a>
+                      <% if (['admin','secretary'].includes(userRole)) { %>
+                        <% if (!['Completed','Cancelled'].includes(m.status)) { %>
+                          <a href="/meeting/<%= m.meeting_id %>/edit" class="btn btn-light btn-sm">Edit</a>
+                        <% } %>
+                        <% if (m.status !== 'Completed') { %>
+                          <a href="/meeting/<%= m.meeting_id %>/delete" class="btn btn-light btn-sm row-del" aria-label="Delete <%= m.meeting_number %>">Delete</a>
+                        <% } %>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      <% } %>
+
+    </div>
+  </div>
+</div>
+<script>
+// Close the Board of Councils menu when clicking elsewhere.
+document.addEventListener('click', function (e) {
+  document.querySelectorAll('.bc-drop[open]').forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute('open'); });
+});
+</script>
+</body></html>

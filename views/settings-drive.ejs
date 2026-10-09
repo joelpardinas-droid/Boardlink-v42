@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Google Drive Backup | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .gd-steps { margin: 0; padding-left: 20px; line-height: 1.7; font-size: 13.5px; }
+    .gd-steps code, .gd-code { background: #f2f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 12.5px; word-break: break-all; }
+    .gd-meter { height: 10px; border-radius: 6px; background: #e9edf5; overflow: hidden; margin: 6px 0 4px; }
+    .gd-meter span { display: block; height: 100%; background: var(--green); }
+    .gd-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .gd-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Google Drive Backup'}) %>
+    <div class="page">
+      <%
+        const _when = d => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+      %>
+      <div class="ph"><div>
+        <h1><svg class="icon"><use href="#i-upload" xlink:href="#i-upload"/></svg> Google Drive Backup</h1>
+      </div></div>
+
+      <% if (done) { %><div class="alert a-ok"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> <%= done %></div><% } %>
+      <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+      <% if (dbDown) { %><div class="alert a-warn">The database cannot be reached.</div><% } %>
+
+      <% if (status && !status.enabled) { %>
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-settings" xlink:href="#i-settings"/></svg> Set up Google first (once)</h3></div>
+          <div class="cb">
+            <ol class="gd-steps">
+              <li>Open <strong>console.cloud.google.com</strong> with the office's Google account and make a project (e.g. "BOARDLINK").</li>
+              <li>In <strong>APIs &amp; Services &gt; Library</strong>, turn on <strong>Google Drive API</strong> and <strong>Google Picker API</strong>.</li>
+              <li>In <strong>OAuth consent screen</strong>, choose <strong>External</strong>, fill in the app name, and add the office's Gmail as a <strong>Test user</strong>.</li>
+              <li>In <strong>Credentials</strong>, make an <strong>OAuth client ID</strong> (Web application) and add these <strong>Authorised redirect URIs</strong>:<br>
+                <code><%= redirectUrl %></code><br>
+                <code><%= redirectUrl.replace('/settings/drive/callback', '/auth/google/callback') %></code></li>
+              <li>Also in Credentials, make an <strong>API key</strong> (for the "Add from Google Drive" button).</li>
+              <li>Put them in BOARDLINK's <code>.env</code> and restart BOARDLINK:<br>
+                <code>GOOGLE_CLIENT_ID=…</code> <code>GOOGLE_CLIENT_SECRET=…</code> <code>GOOGLE_API_KEY=…</code></li>
+            </ol>
+          </div>
+        </div>
+
+      <% } else if (status && !status.connected) { %>
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-upload" xlink:href="#i-upload"/></svg> Not connected</h3></div>
+          <div class="cb">
+            <div class="gd-row"><a href="/settings/drive/connect" class="btn btn-gold"><%- include('partials/google-g') %> Connect Google Drive</a></div>
+            <% if (status.total || status.agendaTotal) { %><p class="gd-note" style="margin-top:12px">They will all be copied once connected: <%= status.total %> document<%= status.total === 1 ? '' : 's' %> and <%= status.agendaTotal %> agenda item<%= status.agendaTotal === 1 ? '' : 's' %>.</p><% } %>
+          </div>
+        </div>
+
+      <% } else if (status) {
+           const withFile = Math.max(0, status.total - status.noFile);
+           const pct = withFile ? Math.round(100 * status.backedUp / withFile) : 100;
+           const apct = status.agendaTotal ? Math.round(100 * status.agendaBackedUp / status.agendaTotal) : 100; %>
+        <div class="g2">
+          <div class="card">
+            <div class="ch"><h3><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> Connected</h3></div>
+            <div class="cb">
+              <div class="dg">
+                <div><div class="dl">Google account</div><div class="dv fw7"><%= status.email || '—' %></div></div>
+                <div><div class="dl">Connected on</div><div class="dv"><%= _when(status.connectedAt) %></div></div>
+                <div><div class="dl">Last backup</div><div class="dv"><%= _when(status.lastBackup) %></div></div>
+                <div><div class="dl">Folder</div><div class="dv"><% if (status.folderUrl) { %><a href="<%= status.folderUrl %>" target="_blank" rel="noopener">Open in Google Drive</a><% } else { %>—<% } %></div></div>
+              </div>
+              <div class="gd-row">
+                <a href="/settings/drive/choose" class="btn btn-gold btn-sm"><svg class="icon icon-sm"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg> Choose what to back up</a>
+                <form action="/settings/drive/backup-now" method="POST" style="margin:0"><button class="btn btn-light btn-sm" type="submit">Back up everything new</button></form>
+                <form action="/settings/drive/disconnect" method="POST" style="margin:0" onsubmit="return confirm('Disconnect Google Drive? Copies already in Drive stay there.');">
+                  <button class="btn btn-light btn-sm" type="submit">Disconnect</button></form>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ch"><h3><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Backed up</h3></div>
+            <div class="cb">
+              <div class="dl">Board resolutions &amp; documents</div>
+              <div class="fw7" style="font-size:20px"><%= status.backedUp %> of <%= withFile %></div>
+              <div class="gd-meter" aria-hidden="true"><span style="width:<%= pct %>%"></span></div>
+              <div class="dl" style="margin-top:12px">Meeting agendas</div>
+              <div class="fw7" style="font-size:20px"><%= status.agendaBackedUp %> of <%= status.agendaTotal %></div>
+              <div class="gd-meter" aria-hidden="true"><span style="width:<%= apct %>%"></span></div>
+              <% if (status.noFile) { %><p class="gd-note"><%= status.noFile %> drafted resolution<%= status.noFile === 1 ? ' has' : 's have' %> no scanned file to copy.</p><% } %>
+              <% if (status.running) { %><p class="gd-note"><strong>Backing up now…</strong></p><% } %>
+              <% if (status.lastError) { %>
+                <div class="alert a-warn" style="margin-top:10px">
+                  <strong>Last problem (<%= _when(status.lastError.at) %>):</strong> <%= status.lastError.message %>
+                  <% if (/Connect it again|disconnected/i.test(status.lastError.message)) { %><br><a href="/settings/drive/connect">Connect again</a><% } %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+</body></html>

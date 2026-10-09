@@ -1,0 +1,118 @@
+
+> boardlink@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit --verbose --json --outputFile=../jest_results.json
+
+  console.log
+      ✅  MySQL connection pool ready
+
+      at log (config/db.js:33:17)
+
+PASS tests/02-digital-archiving.test.js
+  Document model
+    ✓ findAll returns the archived resolutions (55 ms)
+    ✓ findById returns one resolution with its metadata (5 ms)
+    ✓ findById returns nothing for an id that does not exist (2 ms)
+  Archive routes
+    ✓ the Board Secretary can list the archive (587 ms)
+    ✓ the Board Secretary can open the upload page (625 ms)
+    ✓ a Trustee cannot open the upload page (487 ms)
+    ✓ a single archived document opens by id (588 ms)
+
+(node:2515) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:2515) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:2515) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+PASS tests/05-ocr.test.js
+  extractMetadata
+    ✓ reads the resolution number, year and date (3 ms)
+    ✓ flags fields it could not find for manual review (1 ms)
+  extractResolutions / extractMeetingHeader
+    ✓ finds every resolution in one excerpt (3 ms)
+    ✓ reads the meeting header (1 ms)
+  extractText (Tesseract.js, offline language data)
+    ✓ reads the text of a PDF document (3542 ms)
+
+PASS tests/01-user-access.test.js (5.402 s)
+  authController.processLogin
+    ✓ valid credentials redirect to the dashboard (571 ms)
+    ✓ System Administrator is sent to User Management (507 ms)
+    ✓ invalid password shows an error message (676 ms)
+    ✓ an address that is not a Gmail-style email is rejected (10 ms)
+  RBAC (middleware/auth.js)
+    ✓ a visitor who is not signed in is sent to the login page (6 ms)
+    ✓ a Trustee cannot open User Management (514 ms)
+    ✓ the System Administrator can open User Management (540 ms)
+  config/roles.js
+    ✓ there are exactly six account types (1 ms)
+    ✓ a council member is labelled by council (1 ms)
+    ✓ an unknown account type is refused
+  bcrypt password hashing
+    ✓ the same password gives two different hashes that both verify (2278 ms)
+
+PASS tests/04-premeeting-review.test.js
+  services/access.js
+    ✓ a Trustee can see a Board of Trustees meeting (4 ms)
+    ✓ an Academic Council member cannot see a Board of Trustees meeting
+    ✓ only members may comment (1 ms)
+    ✓ comments close when the meeting is completed (1 ms)
+  services/compileService.js
+    ✓ groups each comment under its own agenda item (2 ms)
+    ✓ reads a marked-area rectangle and ignores broken data (2 ms)
+    ✓ makes a safe file name for the compiled document
+  Meeting page access
+    ✓ a Trustee can open the Board of Trustees meeting (671 ms)
+    ✓ an Academic Council member is kept out of it (712 ms)
+
+  console.log
+      ✅  MySQL connection pool ready
+
+      at log (config/db.js:33:17)
+
+PASS tests/03-agenda-management.test.js
+  config/governance.js
+    ✓ Board of Trustees: 11 members, quorum 7 (3 ms)
+    ✓ Academic Council quorum is 37 of 72 (20 ms)
+    ✓ an unknown body has no quorum (1 ms)
+  commentDeadlineFor
+    ✓ defaults to five days before the meeting (33 ms)
+    ✓ keeps a date the Secretary chose (1 ms)
+    ✓ never lets the deadline fall after the meeting
+  Meeting routes
+    ✓ the Board Secretary can open Create Meeting (627 ms)
+    ✓ a Trustee cannot open Create Meeting (562 ms)
+
+PASS tests/07-transcription.test.js
+  transcriptionService.transcribe
+    ✓ reports clearly when the whisper.cpp program is missing (17 ms)
+  Transcription page
+    ✓ the Board Secretary can open it (458 ms)
+    ✓ a Trustee cannot (506 ms)
+
+PASS tests/08-summary.test.js
+  parseItemSummary
+    ✓ splits the model reply into summary, key points and action (3 ms)
+    ✓ an empty reply gives empty parts instead of an error (1 ms)
+  keySentences.condense
+    ✓ a short document is passed to the model whole
+    ✓ a long document is cut down to the character budget (7 ms)
+  Summary page
+    ✓ the Board Secretary can open it (537 ms)
+    ✓ a Trustee cannot (587 ms)
+
+PASS tests/06-search.test.js
+  meilisearchService.search
+    ✓ finds a resolution by a word in its title (31 ms)
+    ✓ tolerates a spelling mistake (7 ms)
+    ✓ every word must match, so extra words narrow the result (59 ms)
+    ✓ a word that is nowhere in the archive returns nothing (13 ms)
+  Archive search page
+    ✓ shows the matching resolution (494 ms)
+
+Test Suites: 8 passed, 8 total
+Tests:       54 passed, 54 total
+Snapshots:   0 total
+Time:        20.398 s
+Ran all test suites.
+Test results written to: ../jest_results.json
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

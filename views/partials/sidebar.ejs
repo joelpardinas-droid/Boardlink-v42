@@ -1,0 +1,65 @@
+<%
+  // Show navigation links based on the signed-in user's role.
+  //
+  //   System Administrator (admin) — manages users only. They do NOT
+  //     participate in the board workflow, so they don't see Dashboard,
+  //     Digital Archive, Meeting Records, or OCR.
+  //
+  //   Board Secretary — manages the board workflow end to end:
+  //     Dashboard, Digital Archive, Meeting Records, and OCR.
+  //
+  //   Trustees and Administrative / Academic / RIC Council members —
+  //     Dashboard, Digital Archive, Meeting Records. No OCR. No User
+  //     Management.
+  const _role   = currentUser ? currentUser.role : '';
+  const _isAdm  = _role === 'admin';
+  const _isSec  = _role === 'secretary';
+  const _isMbr  = _role === 'member';
+  const _ocrOk  = _isSec;
+%>
+<%- include('icons') %>
+<!-- Backdrop: only visible/interactive on mobile once the sidebar is opened -->
+<div class="sb-backdrop" id="sbBackdrop"></div>
+<%
+  // v100: a white sidebar like the OptiCCS design — the brand at the top,
+  // a card saying where the user belongs, and the links at the bottom.
+  const _bodyName = { BOT: 'Board of Trustees', ADMIN: 'Administrative Council', ACADEMIC: 'Academic Council', RIC: 'RIC Council' };
+  const _ctxTitle = _isAdm ? 'System Administration' : _isSec ? 'Office of the Board Secretary'
+                  : (_bodyName[currentUser && currentUser.council_type] || 'CSPC');
+  const _ctxSub   = currentUser ? roleLabel(currentUser) : '';
+%>
+<link rel="icon" type="image/svg+xml" href="/img/boardlink-mark.svg">
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <a href="/" class="sb-logo" aria-label="BOARDLINK home"><img src="/img/boardlink-wordmark.svg" alt="BOARDLINK" width="190" height="34"></a>
+    <button type="button" class="sb-close" id="sbClose" aria-label="Close menu">
+      <svg class="icon"><use href="#i-x" xlink:href="#i-x"/></svg>
+    </button>
+  </div>
+
+  <div class="sb-ctx">
+    <p class="sb-ctx-l">Signed in as</p>
+    <div class="sb-ctx-card">
+      <span class="sb-ctx-ic"><svg class="icon icon-sm"><use href="#i-<%= _isAdm ? 'shield' : _isSec ? 'briefcase' : 'building' %>" xlink:href="#i-<%= _isAdm ? 'shield' : _isSec ? 'briefcase' : 'building' %>"/></svg></span>
+      <span class="sb-ctx-t"><strong><%= _ctxTitle %></strong><small><%= _ctxSub %></small></span>
+    </div>
+  </div>
+
+  <nav class="sb-nav" aria-label="Main menu">
+    <% if (_isAdm) { %>
+      <a href="/users"   class="sb-a <%= active==='users'     ? 'active' : '' %>"><svg class="icon"><use href="#i-users" xlink:href="#i-users"/></svg> User Management</a>
+      <a href="/users/logs" class="sb-a <%= active==='user-logs' ? 'active' : '' %>"><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> User Account Logs</a>
+    <% } else { %>
+      <a href="/dashboard" class="sb-a <%= active==='dashboard' ? 'active' : '' %>"><svg class="icon"><use href="#i-home" xlink:href="#i-home"/></svg> Dashboard</a>
+      <a href="/archive"   class="sb-a <%= active==='archive'   ? 'active' : '' %>"><svg class="icon"><use href="#i-folder" xlink:href="#i-folder"/></svg> Digital Archive</a>
+      <a href="/meeting"   class="sb-a <%= active==='meeting'   ? 'active' : '' %>"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Meeting Records</a>
+      <% if (_ocrOk) { %>
+        <a href="/ocr"     class="sb-a <%= active==='ocr'       ? 'active' : '' %>"><svg class="icon"><use href="#i-scan" xlink:href="#i-scan"/></svg> OCR</a>
+      <% } %>
+      <% if (_isSec) { %>
+        <a href="/settings/drive" class="sb-a <%= active==='drive' ? 'active' : '' %>"><svg class="icon"><use href="#i-upload" xlink:href="#i-upload"/></svg> Google Drive Backup</a>
+      <% } %>
+    <% } %>
+    <a href="/logout" class="sb-a sb-out"><svg class="icon"><use href="#i-logout" xlink:href="#i-logout"/></svg> Log Out</a>
+  </nav>
+</aside>

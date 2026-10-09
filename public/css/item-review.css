@@ -1,0 +1,416 @@
+/* ============================================================
+   item-review.css — reading and commenting on an agenda PDF
+   ============================================================
+   The document is the subject of this page, so it gets the space:
+   pages sit on a quiet grey desk, and the comment column stays
+   plain white. Colour is used only to mean something —
+     amber   = where members commented
+     navy    = the comment you are looking at
+     green   = a minutes correction the Secretary has addressed
+*/
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.rv-page { padding-bottom: 32px; }
+
+.rv-crumbs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.rv-crumbs-spacer { flex: 1; }
+
+.rv-head { margin-bottom: 14px; }
+.rv-meeting { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+.rv-head h1 {
+  font-size: var(--fs-h1); font-weight: 800; line-height: 1.25;
+  display: flex; gap: 10px; align-items: baseline; max-width: 70ch;
+}
+.rv-num {
+  flex-shrink: 0; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 6px;
+  background: var(--navy); color: #f5c96a; font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transform: translateY(-2px);
+}
+.rv-facts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.rv-file { font-size: 12.5px; color: var(--dark); word-break: break-word; }
+.rv-deadline { font-size: 12.5px; color: var(--dark); }
+.rv-deadline.is-past { color: var(--red); font-weight: 600; }
+
+.rv-empty { padding: 36px 24px; text-align: center; color: var(--dark); }
+.rv-empty .icon { width: 34px; height: 34px; color: var(--muted); margin-bottom: 8px; }
+.rv-empty h2 { font-size: 16px; margin-bottom: 6px; }
+.rv-empty p { color: var(--muted); font-size: 13px; max-width: 52ch; margin: 0 auto; }
+
+/* ── AI summary of the document ───────────────────────────── */
+.rv-summary { margin-bottom: 14px; padding: 0; overflow: hidden; }
+.rv-summary > summary {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+  padding: 11px 14px; font-size: 13.5px; font-weight: 700; color: var(--navy);
+}
+.rv-summary > summary::-webkit-details-marker { display: none; }
+.rv-summary > summary::after { content: '▾'; margin-left: auto; color: var(--muted); transition: transform var(--dur) var(--ease-out); }
+.rv-summary:not([open]) > summary::after { transform: rotate(-90deg); }
+.rv-summary-body { padding: 0 14px 14px; font-size: 13.5px; line-height: 1.6; color: var(--dark); max-width: 90ch; }
+.rv-summary-body p { margin: 0 0 8px; }
+.rv-summary-body ul { margin: 0 0 8px; padding-left: 20px; }
+.rv-summary-body form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.rv-summary-warn { color: #92400e; font-size: 12.5px; }
+.rv-summary-meta { color: var(--muted); font-size: 12px; }
+.rv-summary-wait { display: flex; align-items: center; gap: 4px; color: var(--navy); font-weight: 600; }
+.bf-queued { font-size: 11px; font-weight: 600; color: #1a3d80; background: #e7eefb; border-radius: 10px; padding: 2px 9px; }
+
+/* ── Layout ───────────────────────────────────────────────── */
+.rv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.rv-doc { min-width: 0; position: relative; }
+
+.rv-toolbar {
+  position: sticky; top: 56px; z-index: 20;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px; margin-bottom: 8px;
+  background: rgba(242, 244, 249, .94);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: var(--r);
+}
+.rv-zoom { display: flex; align-items: center; gap: 4px; margin-right: auto; }
+.rv-zoom .btn { min-width: 34px; justify-content: center; }
+.rv-zoom-label { min-width: 48px; text-align: center; font-size: 12.5px; font-weight: 600; color: var(--dark); }
+.rv-area-btn[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.rv-hint { font-size: 12.5px; color: var(--muted); margin: 0 2px 10px; }
+/* Elements toggled with the `hidden` attribute must really disappear,
+   even when a class above gives them their own display value. */
+.rv [hidden], .rv-page [hidden] { display: none !important; }
+.rv-ocr {
+  font-size: 12.5px; color: #7a4b00; background: #fff7e6; border: 1px solid #f4d7a1;
+  border-radius: var(--r); padding: 8px 12px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.rv-pages {
+  background: #dfe4ee;
+  border-radius: var(--r);
+  padding: 18px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  overflow-x: auto;
+  outline: none;
+}
+.rv-pages:focus-visible { box-shadow: 0 0 0 3px rgba(26, 61, 128, .35); }
+
+.rv-loading, .rv-error {
+  padding: 60px 20px; color: var(--dark); font-size: 13.5px; text-align: center;
+}
+.rv-error a { color: var(--blue); text-decoration: underline; }
+.rv-spin {
+  display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: rvspin .7s linear infinite;
+}
+@keyframes rvspin { to { transform: rotate(360deg); } }
+
+/* ── A page ───────────────────────────────────────────────── */
+.rv-pg {
+  position: relative; flex-shrink: 0;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(13, 31, 69, .18), 0 6px 18px rgba(13, 31, 69, .08);
+}
+.rv-pg canvas { display: block; width: 100%; height: 100%; }
+.rv-pg-no {
+  position: absolute; left: 0; top: -15px; font-size: 10.5px; color: #5b6784; font-weight: 600;
+}
+.rv-pg-status {
+  position: absolute; right: 8px; top: 8px; z-index: 6;
+  font-size: 11px; background: rgba(255, 247, 230, .95); color: #7a4b00;
+  border: 1px solid #f4d7a1; border-radius: 20px; padding: 2px 9px;
+}
+
+/* Text layer (PDF.js) — the invisible, selectable copy of the text. */
+.rv-pg .textLayer {
+  position: absolute; inset: 0; overflow: clip; opacity: 1; line-height: 1;
+  text-align: initial; -webkit-text-size-adjust: none; text-size-adjust: none;
+  forced-color-adjust: none; transform-origin: 0 0; z-index: 2;
+  caret-color: CanvasText;
+}
+.rv-pg .textLayer :is(span, br) {
+  color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0 0;
+}
+.rv-pg .textLayer span.markedContent { top: 0; height: 0; }
+/* The words must stay above .endOfContent, which spreads over the
+   whole layer while the mouse is held down; without this every drag
+   selection lands on that helper and collapses to nothing. */
+.rv-pg .textLayer > :not(.markedContent),
+.rv-pg .textLayer .markedContent span:not(.markedContent) { z-index: 1; }
+.rv-pg .textLayer ::selection { background: rgba(26, 61, 128, .28); }
+.rv-pg .textLayer br::selection { background: transparent; }
+.rv-pg .textLayer .endOfContent {
+  display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none;
+}
+.rv-pg .textLayer.selecting .endOfContent { top: 0; }
+
+/* OCR words for scanned pages use the same idea. */
+.rv-pg .ocrLayer { position: absolute; inset: 0; z-index: 2; line-height: 1; }
+.rv-pg .ocrLayer span {
+  position: absolute; color: transparent; white-space: pre; cursor: text;
+  transform-origin: 0 0; font-family: sans-serif;
+}
+.rv-pg .ocrLayer ::selection { background: rgba(26, 61, 128, .28); }
+.rv-pg .ocrLayer br::selection { background: transparent; }
+
+/* Highlights sit above the page image and below the text, so text
+   under a highlight can still be selected. */
+.rv-hl-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.rv-hl {
+  position: absolute;
+  background: rgba(245, 180, 30, .32);
+  border-radius: 2px;
+  mix-blend-mode: multiply;
+}
+.rv-hl.is-area {
+  background: rgba(245, 180, 30, .12);
+  border: 2px dashed #d08a00;
+  border-radius: 4px;
+  mix-blend-mode: normal;
+}
+.rv-hl.is-addressed { background: rgba(26, 143, 92, .22); }
+.rv-hl.is-area.is-addressed { background: rgba(26, 143, 92, .08); border-color: var(--green); }
+.rv-hl.is-active { background: rgba(26, 61, 128, .26); box-shadow: 0 0 0 2px var(--blue); }
+.rv-hl.is-area.is-active { background: rgba(26, 61, 128, .1); border: 2px solid var(--blue); box-shadow: none; }
+.rv-hl.is-draft { background: rgba(26, 61, 128, .2); }
+.rv-hl.is-area.is-draft { background: rgba(26, 61, 128, .08); border: 2px solid var(--blue); }
+
+/* A marked area being moved or resized */
+.rv-box {
+  position: absolute; z-index: 6; cursor: move; touch-action: none;
+  border: 2px solid var(--blue); background: rgba(26, 61, 128, .1); border-radius: 3px;
+}
+.rv-box.is-draft { border-style: dashed; }
+.rv-box:focus-visible { outline: 3px solid rgba(26, 61, 128, .45); outline-offset: 2px; }
+.rv-box.is-moving, .rv-box.is-resizing { background: rgba(26, 61, 128, .16); }
+.rv-handle {
+  position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  background: #fff; border: 2px solid var(--blue); border-radius: 3px;
+  touch-action: none;
+}
+/* A larger invisible target, so handles can be grabbed with a finger. */
+.rv-handle::after { content: ''; position: absolute; inset: -10px; }
+.rv-handle-nw { cursor: nwse-resize; } .rv-handle-se { cursor: nwse-resize; }
+.rv-handle-ne { cursor: nesw-resize; } .rv-handle-sw { cursor: nesw-resize; }
+.rv-handle-n  { cursor: ns-resize; }   .rv-handle-s  { cursor: ns-resize; }
+.rv-handle-w  { cursor: ew-resize; }   .rv-handle-e  { cursor: ew-resize; }
+
+.rv-area-edit { margin-top: 8px; }
+.rv-area-hint { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.rv-c.is-editing-area { background: #f1f5fd; border-left-color: var(--blue); }
+.rv-target-hint { font-size: 11.5px; color: var(--muted); }
+
+/* Clickable pins in the margin, one per commented spot. */
+.rv-pin-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.rv-pin {
+  position: absolute; right: -11px;
+  min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
+  border: 2px solid #fff; background: #d08a00; color: #fff;
+  font: 700 11px/18px Inter, sans-serif; text-align: center;
+  cursor: pointer; pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(13, 31, 69, .3);
+}
+.rv-pin.is-addressed { background: var(--green); }
+.rv-pin.is-active { background: var(--blue); }
+.rv-pin:focus-visible { outline: 3px solid rgba(26, 61, 128, .45); outline-offset: 1px; }
+
+/* Marking an area */
+.rv.is-area-mode .rv-pg { cursor: crosshair; touch-action: none; }
+.rv.is-area-mode .rv-pg .textLayer,
+.rv.is-area-mode .rv-pg .ocrLayer { pointer-events: none; }
+.rv-draw {
+  position: absolute; z-index: 5; pointer-events: none;
+  border: 2px solid var(--blue); background: rgba(26, 61, 128, .08); border-radius: 3px;
+}
+
+/* Floating "Comment" button next to a selection */
+.rv-selbtn {
+  position: absolute; z-index: 30;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--navy); color: #fff; border: 0; border-radius: 20px;
+  padding: 7px 13px; font: 600 12.5px Inter, sans-serif; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(13, 31, 69, .28);
+}
+.rv-selbtn .icon { width: 15px; height: 15px; }
+
+/* ── Comment column ───────────────────────────────────────── */
+.rv-side {
+  position: sticky; top: 72px;
+  max-height: calc(100vh - 88px);
+  display: flex; flex-direction: column;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--sh);
+}
+.rv-side-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--line);
+}
+.rv-side-head h2 { font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.rv-count {
+  min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
+  background: var(--bg); color: var(--dark); font-size: 11.5px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.rv-side-close { display: none; background: none; border: 0; color: var(--dark); cursor: pointer; padding: 4px; }
+
+.rv-list { flex: 1; overflow-y: auto; padding: 6px 0; overscroll-behavior: contain; }
+.rv-muted { color: var(--muted); font-size: 12.5px; padding: 14px; }
+.rv-group-title {
+  font-size: 11.5px; font-weight: 700; color: var(--muted);
+  padding: 12px 14px 4px;
+}
+
+.rv-c {
+  padding: 10px 14px 11px;
+  border-left: 3px solid transparent;
+  cursor: default;
+}
+.rv-c + .rv-c { border-top: 1px solid #f0f2f7; }
+.rv-c.is-anchored { cursor: pointer; }
+.rv-c.is-anchored:hover { background: #fafbfd; }
+.rv-c.is-active { background: #f1f5fd; border-left-color: var(--blue); }
+.rv-c-where {
+  display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;
+}
+.rv-c-page {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; color: #7a4b00;
+  background: #fff1d6; border-radius: 4px; padding: 1px 6px; margin-top: 1px;
+}
+.rv-c.is-addressed .rv-c-page { color: var(--green); background: #dff5ed; }
+.rv-c-quote {
+  font-size: 12.5px; font-style: italic; color: var(--dark);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rv-c-area { font-size: 12.5px; color: var(--dark); }
+.rv-c-who { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+.rv-c-who strong { color: var(--navy); }
+.rv-c-meta { color: var(--muted); font-size: 11.5px; }
+.rv-c-text { margin-top: 4px; font-size: 13.5px; color: var(--dark); white-space: pre-wrap; word-break: break-word; }
+.rv-c-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.rv-c-actions { display: flex; gap: 12px; margin-top: 6px; }
+.rv-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: 600 12px Inter, sans-serif; color: var(--blue);
+}
+.rv-link:hover { text-decoration: underline; }
+.rv-link.is-danger { color: var(--red); }
+.rv-c-actions { align-items: center; }
+/* The Secretary's "Done" button: a clear green action, not a link. */
+.rv-done {
+  margin-left: auto; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--green); background: #fff; color: var(--green);
+  font: 600 12px Inter, sans-serif;
+}
+.rv-done::before { content: "\2713"; font-weight: 700; }
+.rv-done:hover { background: var(--green); color: #fff; }
+.rv-done:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.rv-edit textarea, .rv-composer textarea {
+  width: 100%; resize: vertical; min-height: 70px;
+  font: 13.5px/1.5 Inter, sans-serif; color: var(--navy);
+  border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+.rv-edit textarea:focus, .rv-composer textarea:focus { outline: none; border-color: var(--blue); }
+.rv-edit-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+.rv-composer {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px 12px;
+  background: #fbfcfe;
+  border-radius: 0 0 var(--r) var(--r);
+}
+.rv-target {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12px; color: var(--muted); margin-bottom: 6px;
+}
+.rv-target.is-set { color: var(--dark); }
+.rv-target .rv-c-quote { -webkit-line-clamp: 2; }
+.rv-composer-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.rv-msg { flex: 1; font-size: 12px; color: var(--muted); }
+.rv-msg.is-error { color: var(--red); }
+
+.rv-side-open { display: none; }
+
+/* ── Tablet and phone ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .rv { grid-template-columns: minmax(0, 1fr) 310px; }
+}
+
+@media (max-width: 900px) {
+  .rv { grid-template-columns: 1fr; }
+  .rv-pages { padding: 14px 6px; }
+  .rv-side {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 120;
+    max-height: 78vh; height: 78vh;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -10px 30px rgba(13, 31, 69, .22);
+    transform: translateY(105%);
+    transition: transform var(--dur) var(--ease-out);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .rv-side.is-open { transform: translateY(0); }
+  .rv-side-close { display: inline-flex; }
+  .rv-side-open {
+    display: inline-flex; align-items: center; gap: 7px;
+    position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110;
+    background: var(--navy); color: #fff; border: 0; border-radius: 24px;
+    padding: 11px 16px; font: 600 13.5px Inter, sans-serif;
+    box-shadow: 0 8px 22px rgba(13, 31, 69, .3); cursor: pointer;
+  }
+  .rv-side-open span {
+    background: #f5c96a; color: var(--navy); border-radius: 10px; padding: 0 7px; font-size: 12px;
+  }
+  .rv-pin { right: -8px; }
+  .rv-crumbs .btn { min-height: 38px; }
+}
+
+/* Phones: keep the tools on one row so the page gets the space.
+   The document already opens fitted to the screen width. */
+@media (max-width: 480px) {
+  .rv-toolbar { gap: 6px; padding: 6px; }
+  .rv-toolbar [data-zoom="fit"] { display: none; }
+  .rv-toolbar .rv-dl-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .rv-zoom-label { min-width: 40px; }
+  .rv-hint { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-side { transition: none; }
+  .rv-spin { animation: none; }
+}
+
+/* ── After the Secretary reworded the document ────────────────
+   A comment whose highlight was put back automatically but should
+   be checked, and one whose words are no longer in the document.
+   Neither is ever deleted. */
+
+.rv-c-stale {
+  display: flex; gap: 6px; margin: 0 0 6px;
+  font-size: 12px; line-height: 1.5; color: #7a4b00;
+  background: #fff8e8; border-left: 3px solid #e6a417;
+  border-radius: 0 6px 6px 0; padding: 5px 8px;
+}
+.rv-c-lost {
+  flex-shrink: 0; font-size: 11.5px; font-weight: 600; color: var(--red);
+  background: #fdeaea; border-radius: 4px; padding: 1px 6px;
+}
+.rv-c.is-stale .rv-hl-note { display: none; }
+.rv-c.is-lost { background: #fffafa; }
+.rv-hl.is-stale { box-shadow: 0 0 0 2px #e6a417; }
+
+/* Quick overview: the document's own key sentences, shown at once. */
+.rv-overview { margin-top: 10px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.rv-overview h4 { margin: 0 0 2px; font-size: 14px; color: var(--navy); }
+.rv-ov-label { margin: 10px 0 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rv-ov-sections { columns: 2 260px; column-gap: 24px; }
+.rv-ov-sections li { break-inside: avoid; }
+.rv-ov-page { color: var(--muted); font-size: 11.5px; white-space: nowrap; }

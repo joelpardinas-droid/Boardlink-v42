@@ -1,0 +1,218 @@
+<%
+  // An agenda item whose paper is a VIDEO (e.g. the President's Report).
+  //   video  { kind, hasWords, comments: [toClient…], clock, notice }
+  const _base = '/meeting/' + meeting.meeting_id + '/item/' + item.item_id;
+  const _page = _base + '/review';
+  const _status = item.item_video_status;
+  const _clock = video.clock;
+  const _notes = { empty: 'Write a comment first.', long: 'Comments are limited to 4000 characters.', failed: 'The comment could not be saved. Please try again.' };
+%>
+<div class="iv" id="iv" data-status-url="<%= _base %>/video/status" data-processing="<%= _status === 'processing' ? '1' : '0' %>">
+
+  <section class="iv-main card">
+    <div class="iv-player">
+      <% if (video.kind === 'audio') { %>
+        <audio id="ivMedia" controls preload="metadata" src="<%= _base %>/video" style="width:100%"></audio>
+      <% } else { %>
+        <video id="ivMedia" controls preload="metadata" playsinline src="<%= _base %>/video">
+          <% if (video.hasWords) { %><track kind="captions" srclang="en" label="Subtitles" src="<%= _base %>/video/captions.vtt" default><% } %>
+          Your browser cannot play this video. <a href="<%= _base %>/video?download=1">Download it</a>.
+        </video>
+      <% } %>
+    </div>
+
+    <% if (_status === 'processing') { %>
+      <div class="iv-wait">
+        <span class="rv-spin" aria-hidden="true"></span>
+        <span><strong id="ivStep"><%= item.item_video_step || 'Working' %>…</strong><br>
+        The subtitles appear when this is done. You can already watch the video.</span>
+      </div>
+    <% } else if (_status === 'failed') { %>
+      <div class="alert a-warn" style="margin:10px 0 0">
+        <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+        <span>No subtitles: <%= item.item_video_error || 'the words could not be written down.' %>
+        <% if (isSecretary) { %>
+          <form action="<%= _base %>/video/retry" method="POST" style="display:inline;margin-left:6px"><button class="btn btn-light btn-sm" type="submit">Try again</button></form>
+        <% } %></span>
+      </div>
+    <% } %>
+
+    <div class="iv-tools">
+      <a class="btn btn-light btn-sm" href="<%= _base %>/video?download=1">
+        <svg class="icon icon-sm"><use href="#i-download" xlink:href="#i-download"/></svg> Download video
+      </a>
+      <% if (video.hasWords) { %>
+        <a class="btn btn-light btn-sm" href="<%= _base %>/video/words.txt">
+          <svg class="icon icon-sm"><use href="#i-download" xlink:href="#i-download"/></svg> Download the words
+        </a>
+      <% } %>
+    </div>
+  </section>
+
+  <aside class="iv-side card" id="comments" aria-label="Comments">
+    <h2 class="iv-side-head">Comments <span class="rv-count"><%= video.comments.length %></span></h2>
+
+    <% if (video.notice && _notes[video.notice]) { %>
+      <div class="alert a-err" style="margin:0 0 10px"><%= _notes[video.notice] %></div>
+    <% } %>
+
+    <div class="iv-list">
+      <% if (!video.comments.length) { %>
+        <p class="iv-muted">No comments yet.</p>
+      <% } %>
+      <% video.comments.forEach(function (c) { %>
+        <article class="iv-cmt <%= c.status === 'Addressed' ? 'is-done' : '' %>" id="comment-<%= c.id %>"
+                 <% if (c.videoTime != null) { %>data-time="<%= c.videoTime %>"<% } %>>
+          <div class="iv-who">
+            <strong><%= c.author %></strong>
+            <span class="iv-role"><%= c.roleLabel %></span>
+            <% if (c.phase === 'In-Session') { %><span class="iv-role">In-Session</span><% } %>
+            <% if (c.status === 'Addressed') { %><span class="iv-done">✓ Done</span><% } %>
+          </div>
+          <% if (c.videoTime != null) { %>
+            <button type="button" class="iv-at" data-seek="<%= c.videoTime %>">▶ at <%= _clock(c.videoTime) %></button>
+          <% } %>
+          <div class="iv-text"><%= c.text %></div>
+          <div class="iv-meta">
+            <%= c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '' %><%= c.editedAt ? ' · edited' : '' %>
+          </div>
+          <% if (isSecretary && c.status !== 'Addressed') { %>
+            <form action="/meeting/<%= meeting.meeting_id %>/comment/<%= c.id %>/addressed" method="POST" class="iv-act">
+              <input type="hidden" name="back" value="<%= _page %>">
+              <button type="submit" class="btn btn-light btn-sm">Done</button>
+            </form>
+          <% } %>
+          <% if (c.canEdit) { %>
+            <div class="iv-act">
+              <details>
+                <summary>Edit</summary>
+                <form action="/meeting/<%= meeting.meeting_id %>/comment/<%= c.id %>/edit" method="POST">
+                  <input type="hidden" name="back" value="<%= _page %>">
+                  <textarea name="text" maxlength="4000" required aria-label="Edit your comment"><%= c.text %></textarea>
+                  <button type="submit" class="btn btn-navy btn-sm">Save changes</button>
+                </form>
+              </details>
+              <form action="/meeting/<%= meeting.meeting_id %>/comment/<%= c.id %>/delete" method="POST"
+                    onsubmit="return confirm('Delete this comment? This cannot be undone.');">
+                <input type="hidden" name="back" value="<%= _page %>">
+                <button type="submit" class="iv-del">Delete</button>
+              </form>
+            </div>
+          <% } %>
+        </article>
+      <% }) %>
+    </div>
+
+    <% if (canComment) { %>
+      <form class="iv-composer" action="<%= _base %>/video/comment" method="POST">
+        <label class="iv-attime">
+          <input type="checkbox" name="use_time" value="1" id="ivUseTime">
+          At <strong id="ivTimeLabel">0:00</strong> in the video
+        </label>
+        <input type="hidden" name="video_time" id="ivTime" value="0">
+        <label for="ivText" class="sr-only">Your comment</label>
+        <textarea id="ivText" name="text" rows="3" maxlength="4000" required placeholder="Write your comment…"></textarea>
+        <button type="submit" class="btn btn-navy btn-sm">Post comment</button>
+      </form>
+    <% } else if (frozen) { %>
+      <p class="iv-muted">This meeting is completed, so comments are read-only.</p>
+    <% } %>
+  </aside>
+</div>
+
+<style>
+  .iv { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+  .iv-main { padding: 12px; }
+  .iv-player video { width: 100%; max-height: 70vh; background: #000; border-radius: 8px; display: block; }
+  .iv-player video::cue { background: rgba(13,31,69,.82); color: #fff; font-size: 1.05em; line-height: 1.35; }
+  .iv-wait { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font-size: 13px; color: var(--dark); }
+  .iv-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .iv-side { padding: 12px; position: sticky; top: 12px; max-height: calc(100vh - 24px); display: flex; flex-direction: column; }
+  .iv-side-head { font-size: 15px; font-weight: 800; color: var(--navy); margin: 0 0 10px; display: flex; gap: 8px; align-items: center; }
+  .iv-list { overflow-y: auto; flex: 1; min-height: 60px; }
+  .iv-muted { color: var(--muted); font-size: 13px; }
+  .iv-cmt { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; font-size: 13px; background: #fff; }
+  .iv-cmt.is-done { background: #f3faf5; border-color: #cfe9d7; }
+  .iv-cmt.is-now { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(26,61,128,.15); }
+  .iv-who { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .iv-role { font-size: 11px; color: var(--muted); background: #f1f5f9; border-radius: 10px; padding: 1px 7px; }
+  .iv-done { font-size: 11px; color: #166534; font-weight: 700; }
+  .iv-at { margin: 6px 0 2px; border: 0; border-radius: 12px; padding: 2px 9px; font-size: 12px; font-weight: 700;
+           background: #fff4dc; color: #8a5a00; cursor: pointer; }
+  .iv-at:hover, .iv-at:focus-visible { background: #ffe7b0; }
+  .iv-text { white-space: pre-wrap; margin-top: 4px; line-height: 1.5; }
+  .iv-meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .iv-act { margin-top: 6px; display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+  .iv-act summary { cursor: pointer; font-size: 12px; color: var(--navy); }
+  .iv-act textarea { width: 100%; min-height: 64px; margin: 6px 0; }
+  .iv-del { border: 0; background: none; color: var(--red); font-size: 12px; cursor: pointer; padding: 0; }
+  .iv-composer { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+  .iv-composer textarea { width: 100%; }
+  .iv-composer button { align-self: flex-end; }
+  .iv-attime { font-size: 12.5px; display: flex; gap: 6px; align-items: center; color: var(--dark); }
+  @media (max-width: 900px) { .iv { grid-template-columns: 1fr; } .iv-side { position: static; max-height: none; } }
+</style>
+
+<script>
+(function () {
+  var media = document.getElementById('ivMedia');
+  var clock = function (t) {
+    t = Math.max(0, Math.floor(t || 0));
+    var h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+  };
+  // "At 2:15 in the video": follows the video; ticked once the video is played or paused.
+  var useTime = document.getElementById('ivUseTime'), timeIn = document.getElementById('ivTime'),
+      timeLabel = document.getElementById('ivTimeLabel'), touched = false;
+  if (useTime) useTime.addEventListener('change', function () { touched = true; });
+  function syncTime() {
+    if (!media || !timeIn) return;
+    timeIn.value = (Math.round(media.currentTime * 100) / 100).toFixed(2);
+    timeLabel.textContent = clock(media.currentTime);
+    if (!touched && media.currentTime > 0) useTime.checked = true;
+  }
+  if (media) {
+    ['timeupdate', 'pause', 'seeked'].forEach(function (ev) { media.addEventListener(ev, syncTime); });
+  }
+  // Clicking "at 2:15" on a comment jumps there.
+  function seek(t) {
+    if (!media) return;
+    media.currentTime = Number(t) || 0;
+    media.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (media.paused) media.play().catch(function () {});
+  }
+  document.querySelectorAll('[data-seek]').forEach(function (b) {
+    b.addEventListener('click', function () { seek(b.getAttribute('data-seek')); });
+  });
+  // Opening a comment's link (from the meeting page) shows it and its moment.
+  var m = /^#comment-(\d+)$/.exec(location.hash);
+  var target = m && document.getElementById('comment-' + m[1]);
+  if (target) {
+    target.classList.add('is-now');
+    target.scrollIntoView({ block: 'nearest' });
+    var t = target.getAttribute('data-time');
+    if (t != null && media) {
+      var go = function () { media.currentTime = Number(t); };
+      if (media.readyState >= 1) go(); else media.addEventListener('loadedmetadata', go, { once: true });
+    }
+  }
+  // While the subtitles are being written, check every few seconds.
+  var box = document.getElementById('iv');
+  if (box && box.getAttribute('data-processing') === '1') {
+    var step = document.getElementById('ivStep');
+    (function tick() {
+      fetch(box.getAttribute('data-status-url'), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.status !== 'processing') {
+            // Do not interrupt someone watching; reload when they pause.
+            if (media && !media.paused) { media.addEventListener('pause', function () { location.reload(); }, { once: true }); return; }
+            location.reload(); return;
+          }
+          if (d && d.step && step) step.textContent = d.step + '…';
+          setTimeout(tick, 5000);
+        }).catch(function () { setTimeout(tick, 10000); });
+    })();
+  }
+})();
+</script>

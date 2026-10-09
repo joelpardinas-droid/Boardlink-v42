@@ -1,0 +1,276 @@
+<%
+  // Pre-meeting briefing, one entry per agenda item. The same controls
+  // are shown to the Secretary, Trustees and council members.
+  // Expects: id, briefingData (and optionally briefingNotice)
+  const bd = (typeof briefingData !== 'undefined' && briefingData) ? briefingData : { entries: [], hasAny: false, meta: null, job: null };
+  const job = bd.job;
+  const running = !!job && (job.state === 'queued' || job.state === 'running');
+  const withFiles = bd.entries.filter(e => e.item.item_pdf || e.item.item_video).length;
+  const notice = (typeof briefingNotice !== 'undefined') ? briefingNotice : null;
+  const fmtWhen = d => {
+    try {
+      return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' });
+    } catch (_) { return ''; }
+  };
+  const parse = parseItemSummary;
+  // Cancel: the Secretary may stop any run; a member only one they started.
+  const _me = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+  const canCancel = running && !!_me && (['admin', 'secretary'].includes(_me.role) ||
+                    (job.startedBy && String(job.startedBy) === String(_me.id)));
+%>
+<form class="ic-card bf-card" id="briefing" style="margin-bottom:16px"
+      action="/meeting/<%= id %>/briefing" method="POST">
+  <div class="ic-head">
+    <svg class="icon"><use href="#i-cpu" xlink:href="#i-cpu"/></svg> AI Pre-Meeting Briefing
+    <span class="bf-actions">
+      <button type="submit" name="mode" value="all" class="btn btn-light btn-sm" <%= !withFiles ? 'disabled' : '' %>
+              title="Summarise every item that has a document. Items that have not changed are kept as they are.">
+        <svg class="icon icon-sm"><use href="<%= bd.hasAny ? '#i-refresh' : '#i-sparkle' %>" xlink:href="<%= bd.hasAny ? '#i-refresh' : '#i-sparkle' %>"/></svg>
+        <%= bd.hasAny ? 'Update all items' : 'Summarise all items' %>
+      </button>
+    </span>
+  </div>
+  <div class="ic-body">
+    <% if (notice === 'notstopped') { %>
+      <div class="alert a-warn" style="margin-bottom:10px;font-size:12.5px">
+        <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+        Nothing was stopped: the summarising had already finished, or it was started by someone else.
+      </div>
+    <% } %>
+    <% if (job && job.state === 'cancelled' && !running) { %>
+      <div class="alert a-warn" style="margin-bottom:10px;font-size:12.5px">
+        <svg class="icon"><use href="#i-x-circle" xlink:href="#i-x-circle"/></svg>
+        Summarising was cancelled. Summaries that were already finished are kept.
+      </div>
+    <% } %>
+    <% if (notice === 'none') { %>
+      <div class="alert a-warn" style="margin-bottom:10px;font-size:12.5px">
+        <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+        Tick at least one agenda item that has a document, then choose <strong>Summarise selected</strong>.
+      </div>
+    <% } %>
+    <% if (running) { %>
+      <div class="bf-progress" data-briefing-running="<%= id %>" role="status" aria-live="polite">
+        <div class="bf-progress-row">
+          <span class="bf-spin" aria-hidden="true"></span>
+          <span class="bf-progress-text">
+            <% if (job.state === 'cancelled') { %>
+              Stopping…
+            <% } else if (job.state === 'queued') { %>
+              Waiting for another briefing to finish…
+            <% } else if (job.current) { %>
+              Summarising <%= job.current.index %> of <%= job.total %>: Item <%= job.current.order %>, <%= job.current.title %> (<%= job.current.step %>)
+            <% } else { %>
+              Preparing…
+            <% } %>
+          </span>
+          <% if (canCancel) { %>
+            <button type="submit" formaction="/meeting/<%= id %>/briefing/cancel" formnovalidate
+                    class="btn btn-light btn-sm bf-cancel"
+                    onclick="return confirm('Stop summarising? Summaries that are already finished are kept.');">
+              <svg class="icon icon-sm"><use href="#i-x" xlink:href="#i-x"/></svg> Cancel
+            </button>
+          <% } %>
+        </div>
+        <div class="bf-bar"><span style="width:<%= job.total ? Math.round(job.done / job.total * 100) : 0 %>%"></span></div>
+      </div>
+    <% } else if (job && (job.state === 'failed' || job.error)) { %>
+      <div class="alert a-err" style="margin-bottom:10px;font-size:12.5px">
+        <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+        <%= job.state === 'failed' ? 'The briefing could not be updated' : 'Some items could not be summarised' %>:
+        <%= job.error || 'unknown error' %>
+        <% if (bd.hasAny) { %> Summaries written earlier are still shown below.<% } %>
+      </div>
+    <% } %>
+
+    <% if (bd.meta) { %>
+      <p class="bf-meta">
+        Written by the local AI from the attached documents. Updated <%= fmtWhen(bd.meta.generatedAt) %>.
+        Check important details against the document.
+      </p>
+      <% if (bd.meta.stale && !running) { %>
+        <div class="alert a-warn" style="margin-bottom:10px;font-size:12px">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+          Some items changed after they were summarised. Use <strong>Update all items</strong>, or tick those items and choose <strong>Summarise selected</strong>.
+        </div>
+      <% } %>
+    <% } %>
+
+    <% if (!bd.entries.length) { %>
+      <div class="brief-empty">This meeting has no agenda items yet.</div>
+    <% } else { %>
+      <% if (!bd.hasAny && !running) { %>
+      <div class="brief-empty" style="margin-bottom:12px">
+        No briefing yet.
+        <% if (!withFiles) { %>
+          
+        <% } %>
+      </div>
+      <% } %>
+      <% if (withFiles) { %>
+        <div class="bf-pick">
+          <label class="bf-check"><input type="checkbox" id="bfAll"> Select all</label>
+          <button type="submit" name="mode" value="selected" class="btn btn-navy btn-sm" id="bfSelected">
+            Summarise selected <span id="bfCount"></span>
+          </button>
+          <button type="button" class="bf-expand-all" id="bfExpandAll" aria-pressed="false">Show all summaries</button>
+        </div>
+      <% } %>
+      <ol class="bf-list">
+        <% bd.entries.forEach(e => {
+             const it = e.item, s = e.summary;
+             const p = s && s.status === 'done' ? parse(s.summary_text) : null; %>
+          <li class="bf-item<%= e.queued ? ' is-queued' : '' %>">
+            <div class="bf-item-head">
+              <button type="button" class="bf-toggle" aria-expanded="false" aria-controls="bfBody<%= it.item_id %>"
+                      title="Show or hide the summary">
+                <svg class="icon icon-sm"><use href="#i-chevron-down" xlink:href="#i-chevron-down"/></svg>
+                <span class="sr-only">Show the summary of item <%= it.item_order %></span>
+              </button>
+              <% if (it.item_pdf || it.item_video) { %>
+                <input type="checkbox" class="bf-tick" name="item_ids" value="<%= it.item_id %>"
+                       aria-label="Select item <%= it.item_order %>: <%= it.item_title %>">
+              <% } else { %>
+                <span class="bf-tick-space" aria-hidden="true"></span>
+              <% } %>
+              <span class="bf-num"><%= it.item_order %></span>
+              <div class="bf-item-title">
+                <strong><%= it.item_title %></strong>
+                <span class="bf-sub">
+                  <%= it.item_category %><% if (it.item_video) { %>, video<% } else if (s && s.pages_read) { %>, <%= s.pages_read %> page<%= s.pages_read === 1 ? '' : 's' %> read<% if (s.ocr_pages) { %> (<%= s.ocr_pages %> scanned)<% } %><% } %>
+                </span>
+              </div>
+              <% if (it.item_pdf || it.item_video) { %>
+                <span class="bf-item-tools">
+                  <a class="bf-open" href="/meeting/<%= id %>/item/<%= it.item_id %>/review"><%= it.item_video ? 'Watch video' : 'Open document' %></a>
+                  <% if (e.queued) { %>
+                    <span class="bf-queued"><%= job && job.current && job.current.order === it.item_order ? 'In progress' : 'Queued' %></span>
+                  <% } else { %>
+                    <button type="submit" name="only" value="<%= it.item_id %>" class="btn btn-light btn-sm bf-one">
+                      <%= s && s.status === 'done' ? 'Summarise again' : 'Summarise' %>
+                    </button>
+                  <% } %>
+                </span>
+              <% } %>
+            </div>
+
+            <div class="bf-item-body" id="bfBody<%= it.item_id %>" hidden>
+            <% if (!it.item_pdf && !it.item_video) { %>
+              <p class="bf-muted">No document attached, so there is nothing to summarise.</p>
+            <% } else if (!s) { %>
+              <p class="bf-muted"><%= e.queued ? 'Waiting to be summarised…' : 'Not summarised yet.' %></p>
+            <% } else if (s.status === 'no_text') { %>
+              <p class="bf-warn"><%= s.error_text || 'No readable text was found in this PDF.' %></p>
+            <% } else if (s.status === 'failed') { %>
+              <p class="bf-warn">Not summarised: <%= s.error_text || 'the local AI did not respond.' %></p>
+            <% } else if (p) { %>
+              <% if (p.summary) { %><p class="bf-summary"><%= p.summary %></p><% } %>
+              <% if (p.points.length) { %>
+                <ul class="bf-points">
+                  <% p.points.forEach(pt => { %><li><%= pt %></li><% }) %>
+                </ul>
+              <% } %>
+              <% if (p.action) { %>
+                <p class="bf-action"><span>Action requested:</span> <%= p.action %></p>
+              <% } %>
+              <% if (s.unverified && s.unverified.length) { %>
+                <p class="bf-warn">Check these figures against the document; they were not found in it: <%= s.unverified.join(', ') %></p>
+              <% } %>
+            <% } %>
+            <% if (e.stale && !e.queued) { %>
+              <p class="bf-warn">This item or its document changed after this summary was written.</p>
+            <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ol>
+    <% } %>
+  </div>
+</form>
+<script>
+  (function () {
+    var form = document.getElementById('briefing');
+    if (!form) return;
+    var all = document.getElementById('bfAll');
+    var btn = document.getElementById('bfSelected');
+    var count = document.getElementById('bfCount');
+    var ticks = form.querySelectorAll('.bf-tick');
+    function update() {
+      var n = 0;
+      ticks.forEach(function (t) { if (t.checked) n++; });
+      if (count) count.textContent = n ? '(' + n + ')' : '';
+      if (btn) btn.disabled = n === 0;
+      if (all) {
+        all.checked = n > 0 && n === ticks.length;
+        all.indeterminate = n > 0 && n < ticks.length;
+      }
+    }
+    if (all) all.addEventListener('change', function () {
+      ticks.forEach(function (t) { t.checked = all.checked; });
+      update();
+    });
+    ticks.forEach(function (t) { t.addEventListener('change', update); });
+    update();
+
+    // Dropdown on each item: show or hide its summary.
+    var toggles = form.querySelectorAll('.bf-toggle');
+    function setOpen(btn, open) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.getElementById(btn.getAttribute('aria-controls')).hidden = !open;
+    }
+    toggles.forEach(function (b) {
+      b.addEventListener('click', function () { setOpen(b, b.getAttribute('aria-expanded') !== 'true'); syncAll(); });
+    });
+    // Clicking the item's title opens it too.
+    form.querySelectorAll('.bf-item-title').forEach(function (t) {
+      t.addEventListener('click', function () {
+        var b = t.closest('.bf-item').querySelector('.bf-toggle');
+        setOpen(b, b.getAttribute('aria-expanded') !== 'true'); syncAll();
+      });
+    });
+    var expandAll = document.getElementById('bfExpandAll');
+    function syncAll() {
+      if (!expandAll) return;
+      var open = Array.prototype.every.call(toggles, function (b) { return b.getAttribute('aria-expanded') === 'true'; });
+      expandAll.textContent = open ? 'Hide all summaries' : 'Show all summaries';
+      expandAll.setAttribute('aria-pressed', open ? 'true' : 'false');
+    }
+    if (expandAll) expandAll.addEventListener('click', function () {
+      var open = expandAll.getAttribute('aria-pressed') !== 'true';
+      toggles.forEach(function (b) { setOpen(b, open); });
+      syncAll();
+    });
+    // Coming back from one item's page: open that item.
+    var m = /item=(\d+)/.exec(location.search);
+    if (m) { var b = form.querySelector('[aria-controls="bfBody' + m[1] + '"]'); if (b) setOpen(b, true); }
+  })();
+</script>
+<% if (running) { %>
+<script>
+  (function () {
+    var box = document.querySelector('[data-briefing-running]');
+    if (!box) return;
+    var id = box.getAttribute('data-briefing-running');
+    var text = box.querySelector('.bf-progress-text');
+    var bar = box.querySelector('.bf-bar span');
+    function tick() {
+      fetch('/meeting/' + id + '/briefing/status', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var j = d && d.job;
+          if (!j || (j.state !== 'queued' && j.state !== 'running')) {
+            window.location.hash = 'briefing';
+            window.location.reload();
+            return;
+          }
+          if (j.state === 'queued') text.textContent = 'Waiting for another briefing to finish…';
+          else if (j.current) text.textContent = 'Summarising ' + j.current.index + ' of ' + j.total + ': Item ' + j.current.order + ', ' + j.current.title + ' (' + j.current.step + ')';
+          bar.style.width = (j.total ? Math.round(j.done / j.total * 100) : 0) + '%';
+          setTimeout(tick, 4000);
+        })
+        .catch(function () { setTimeout(tick, 8000); });
+    }
+    setTimeout(tick, 3000);
+  })();
+</script>
+<% } %>

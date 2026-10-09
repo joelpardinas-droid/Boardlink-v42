@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Transcription | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'AI Transcription'}) %>
+    <div class="page">
+      <div class="ph"><div><h1><svg class="icon"><use href="#i-mic" xlink:href="#i-mic"/></svg> AI Meeting Transcription</h1></div><a href="/meeting" class="back"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back</a></div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-mic" xlink:href="#i-mic"/></svg> Generate Transcript</h3></div>
+          <div class="cb">
+            <form action="/meeting/transcription" method="POST" enctype="multipart/form-data">
+              <div class="fg"><label>Meeting Title *</label><input type="text" name="meetingTitle" placeholder="e.g. 1st Regular Board Meeting 2026" required></div>
+              <div class="fg"><label>Meeting Date</label><input type="date" name="meetingDate"></div>
+              <div class="fg"><label>Upload Video or Audio (MP4, MOV, MP3, WAV, …)</label><input type="file" name="audio" accept="video/*,audio/*" required></div>
+              <button type="submit" class="btn btn-navy"><svg class="icon"><use href="#i-cpu" xlink:href="#i-cpu"/></svg> Generate with AI</button>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><h3><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Transcript Output</h3></div>
+          <div class="cb">
+            <%if(result){%>
+              <%if(typeof fallbackReason !== 'undefined' && fallbackReason){%>
+                <div class="alert a-warn fs12" style="margin-bottom:12px">
+                  <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <strong>The recording could not be turned into words.</strong><br>
+                  <span style="font-family:monospace;font-size:11px"><%=fallbackReason%></span>
+                </div>
+              <%}%>
+              <% if (!(typeof fallbackReason !== 'undefined' && fallbackReason)) { %><div class="codebox"><%=result%></div><% } %>
+              <% if (!(typeof fallbackReason !== 'undefined' && fallbackReason)) { %>
+              <div class="row mt14">
+                <button class="btn btn-gold btn-sm"><svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download</button>
+                <a href="/meeting/summary" class="btn btn-light btn-sm"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Generate Formal Summary</a>
+              </div>
+              <% } %>
+            <%}else{%>
+              <div class="empty"><div class="ei"><svg class="icon"><use href="#i-mic" xlink:href="#i-mic"/></svg></div><h3>No Transcript Yet</h3></div>
+            <%}%>
+          </div>
+        </div>
+      </div>
+
+      <% if (typeof result !== 'undefined' && result && !(typeof fallbackReason !== 'undefined' && fallbackReason)) { %>
+        <div class="card mt16">
+          <div class="ch"><h3><svg class="icon"><use href="#i-edit" xlink:href="#i-edit"/></svg> Basic Summary</h3></div>
+          <div class="cb">
+            <% if (quickSummary) { %>
+              <% if (typeof quickSummaryReason !== 'undefined' && quickSummaryReason) { %>
+                <div class="alert a-warn fs12" style="margin-bottom:12px">
+                  <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <strong>Showing demo summary</strong> — Ollama could not generate a basic summary.<br>
+                  <span style="font-family:monospace;font-size:11px">Reason: <%= quickSummaryReason %></span>
+                </div>
+              <% } %>
+              <div class="codebox" style="white-space:pre-wrap"><%= quickSummary %></div>
+            <% } else { %>
+              <form action="/meeting/transcription/quick-summary" method="POST">
+                <input type="hidden" name="meetingTitle"   value="<%= meetingTitle || '' %>">
+                <textarea name="transcriptText" style="display:none"><%= result %></textarea>
+                <button type="submit" class="btn btn-navy"><svg class="icon"><use href="#i-sparkle" xlink:href="#i-sparkle"/></svg> Generate Basic Summary</button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+</body></html>

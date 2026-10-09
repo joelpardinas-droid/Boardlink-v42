@@ -1,0 +1,16 @@
+# Nightly backup timer. Install alongside boardlink-backup.service:
+#   sudo cp deploy/boardlink-backup.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now boardlink-backup.timer
+#   systemctl list-timers boardlink-backup
+
+[Unit]
+Description=Nightly BOARDLINK backup
+
+[Timer]
+OnCalendar=*-*-* 01:30:00
+# If the server was off at 01:30 (power cut), run once it is back.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,112 @@
+/* ============================================================
+   public/css/resolution-view.css — a Board Resolution with its
+   approved documents attached to words or areas in it (v93)
+   ============================================================ */
+
+/* The resolution */
+.rsv { margin-bottom: 90px; overflow: hidden; }
+.rsv-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 3; flex-wrap: wrap; }
+.rsv-zoom { min-width: 48px; text-align: center; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rsv-sep { width: 1px; height: 22px; background: var(--line); margin: 0 6px; }
+.rsv-pages { background: #e9edf5; padding: 22px 12px 30px; display: flex; flex-direction: column; align-items: center; gap: 18px; min-height: 420px; overflow-x: auto; }
+.rsv-loading { color: var(--muted); font-size: 13px; padding: 40px; }
+.rsv-pg { position: relative; background: #fff; box-shadow: 0 2px 10px rgba(13, 31, 69, .14); flex: 0 0 auto; }
+.rsv-pg canvas { display: block; width: 100%; height: 100%; }
+.rsv-pg-no { position: absolute; top: -16px; left: 0; font-size: 10.5px; color: #7c88a6; }
+
+/* PDF.js text layer (selectable words over the picture) */
+.rsv-pg .textLayer { position: absolute; inset: 0; overflow: hidden; line-height: 1; text-align: initial; opacity: 1; z-index: 2;
+                     -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; }
+.rsv-pg .textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+.rsv-pg .textLayer span.markedContent { top: 0; height: 0; }
+.rsv-pg .textLayer ::selection { background: rgba(200, 146, 42, .35); }
+.rsv-pg .textLayer br::selection { background: transparent; }
+.rsv-pg .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
+.rsv-pg .textLayer.selecting .endOfContent { top: 0; }
+
+/* Highlights: where approved documents are attached */
+.rsv-hl-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.rsv-hl { position: absolute; background: rgba(232, 176, 60, .32); border-bottom: 2px solid #c8922a; border-radius: 2px; pointer-events: auto; cursor: pointer; transition: background-color .15s; }
+.rsv-hl.is-area { background: rgba(232, 176, 60, .12); border: 2px solid #c8922a; border-radius: 4px; }
+.rsv-hl:hover, .rsv-hl.is-flash { background: rgba(232, 176, 60, .55); }
+.rsv-hl.is-area:hover, .rsv-hl.is-area.is-flash { background: rgba(232, 176, 60, .25); }
+.rsv-hl.is-draft { background: rgba(26, 61, 128, .18); border: 2px dashed #1a3d80; border-radius: 4px; pointer-events: none; }
+.rsv-badge { position: absolute; transform: translate(-2px, -60%); display: inline-flex; align-items: center; gap: 3px;
+             background: #c8922a; color: #fff; font-size: 10.5px; font-weight: 800; border-radius: 10px; padding: 2px 7px 2px 5px;
+             box-shadow: 0 2px 6px rgba(0, 0, 0, .2); pointer-events: auto; cursor: pointer; border: 0; line-height: 1.2; }
+.rsv-badge .icon { width: 11px; height: 11px; }
+.rsv-badge:hover { background: #a87618; }
+
+/* The "Attach document" button that appears at a selection */
+.rsv-attach-btn { position: absolute; z-index: 60; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 0; border-radius: 18px;
+                  background: #0d1f45; color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(13, 31, 69, .3); }
+.rsv-attach-btn:hover { background: #1a3d80; }
+.rsv-attach-btn[hidden] { display: none; }
+
+/* Floating button */
+.rsv-fab { position: fixed; right: 24px; bottom: 24px; z-index: 70; display: inline-flex; align-items: center; gap: 8px;
+           padding: 12px 16px 12px 14px; border: 0; border-radius: 26px; background: #c8922a; color: #fff; font: inherit;
+           font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 26px rgba(13, 31, 69, .28); transition: transform .15s, background-color .15s; }
+.rsv-fab:hover { background: #b07d1d; transform: translateY(-1px); }
+.rsv-fab[aria-expanded="true"] { background: #0d1f45; }
+.rsv-fab-n { background: #fff; color: #0d1f45; border-radius: 10px; padding: 1px 8px; font-size: 12px; min-width: 22px; text-align: center; }
+
+/* Floating section of approved documents, above the resolution */
+.rsv-panel { position: fixed; z-index: 65; right: 24px; top: 74px; bottom: 86px; width: min(560px, calc(100vw - 48px));
+             background: #fff; border-radius: 12px; box-shadow: 0 18px 48px rgba(13, 31, 69, .28); border: 1px solid var(--line);
+             display: flex; flex-direction: column; overflow: hidden; animation: rsvIn .18s ease-out; }
+.rsv-panel[hidden] { display: none; }
+.rsv-panel.is-wide { width: min(980px, calc(100vw - 48px)); }
+@keyframes rsvIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rsv-panel-h { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.rsv-panel-h h3 { flex: 1; margin: 0; font-size: 14.5px; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rsv-x { border: 0; background: none; font-size: 22px; line-height: 1; color: #94a3b8; cursor: pointer; padding: 0 4px; }
+.rsv-x:hover { color: #0d1f45; }
+.rsv-back[hidden] { display: none; }
+.rsv-back { border: 0; background: #f2f4f9; border-radius: 8px; padding: 5px 7px; cursor: pointer; color: var(--navy); display: inline-flex; }
+.rsv-filter { display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px; background: #fff8e8; font-size: 12.5px; color: #6b4b10; border-bottom: 1px solid #f3e2bd; }
+.rsv-filter[hidden] { display: none; }
+.rsv-link { border: 0; background: none; color: #007be8; font: inherit; font-weight: 700; cursor: pointer; padding: 0; }
+.rsv-list { overflow-y: auto; padding: 6px 14px 14px; flex: 1; }
+.rsv-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 36px 10px; }
+.rsv-doc { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eef1f6; }
+.rsv-doc:last-child { border-bottom: 0; }
+.rsv-doc.is-flash { background: #fff8e8; border-radius: 8px; }
+.rsv-doc-ic { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 8px; background: #fdf1d8; color: #a87618; display: grid; place-items: center; }
+.rsv-doc-ic .icon { width: 17px; height: 17px; }
+.rsv-doc.is-agenda .rsv-doc-ic { background: #dff5ed; color: #1a8f5c; }
+.rsv-doc-main { flex: 1; min-width: 0; }
+.rsv-doc-t { font-size: 13.5px; font-weight: 700; color: #0d1f45; line-height: 1.4; }
+.rsv-doc-s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.rsv-tag { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 10px; padding: 1px 8px; margin-right: 4px; background: #eef1f6; color: #475569; }
+.rsv-tag.is-pages { background: #fdf1d8; color: #8a5a00; }
+.rsv-tag.is-agenda { background: #dff5ed; color: #1a8f5c; }
+.rsv-doc-q { margin-top: 6px; font-size: 12px; color: #334155; display: flex; gap: 6px; align-items: baseline; }
+.rsv-doc-q q { font-style: italic; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rsv-doc-act { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.rsv-doc-act form { margin: 0; }
+.rsv-preview { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.rsv-preview[hidden] { display: none; }
+.rsv-pv { flex: 1; overflow: auto; background: #e9edf5; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.rsv-pv canvas { background: #fff; box-shadow: 0 2px 8px rgba(13, 31, 69, .15); }
+.rsv-pv-img { max-width: 100%; background: #fff; }
+.rsv-preview-bar { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+
+/* Attach window */
+.rsv-dlg { border: 0; border-radius: 12px; padding: 0; width: min(760px, calc(100vw - 24px)); max-height: calc(100vh - 40px); box-shadow: 0 24px 60px rgba(13, 31, 69, .35); }
+.rsv-dlg::backdrop { background: rgba(13, 31, 69, .45); }
+.rsv-dlg form { padding: 16px 18px 18px; }
+.rsv-dlg-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rsv-dlg-h h3 { margin: 0; font-size: 15px; color: var(--navy); }
+.rsv-quote { border-left: 3px solid #c8922a; background: #fff8e8; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: #4a3509; margin-bottom: 12px; font-style: italic; }
+.rsv-quote[hidden] { display: none; }
+.rsv-quote-pg { display: inline-block; font-style: normal; font-weight: 800; font-size: 11px; background: #c8922a; color: #fff; border-radius: 10px; padding: 1px 8px; margin-right: 6px; }
+.rsv-pg .textLayer { -webkit-user-select: text; user-select: text; }
+
+@media (max-width: 700px) {
+  .rsv-fab { right: 14px; bottom: 14px; padding: 11px 14px; }
+  .rsv-fab span:not(.rsv-fab-n) { display: none; }
+  .rsv-panel, .rsv-panel.is-wide { left: 8px; right: 8px; top: 64px; bottom: 76px; width: auto; }
+  .rsv-pages { padding: 16px 4px 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .rsv-panel { animation: none; } }

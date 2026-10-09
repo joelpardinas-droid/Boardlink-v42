@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meeting Details | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── Hero header ────────────────────────────────────────── */
+    .mtg-hero {
+      background: linear-gradient(135deg, #0d1f45 0%, #1a3d80 100%);
+      color: #fff;
+      padding: 22px 26px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 8px rgba(13,31,69,.12);
+    }
+    .mtg-hero .crumb { font-size: 12px; opacity: .75; margin-bottom: 6px; }
+    .mtg-hero .crumb a { color: #f5c96a; text-decoration: none; }
+    .mtg-hero h1 {
+      font-size: 22px; font-weight: 700; margin: 0; line-height: 1.3;
+      max-width: 80%;
+    }
+    .mtg-hero .facts {
+      display: flex; flex-wrap: wrap; gap: 16px 28px;
+      margin-top: 14px; font-size: 13px;
+    }
+    .mtg-hero .facts .fact { display: flex; align-items: center; gap: 6px; opacity: .92; }
+    .mtg-hero .facts .fact.is-past { color: #fecaca; }
+    .mtg-hero .head-row {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 10px 16px; flex-wrap: wrap;
+    }
+    .mtg-hero .head-row h1 { flex: 1 1 320px; }
+
+    /* ── Compact hero (Trustee / Council Member view) ──────────
+       Roughly half the vertical weight of the secretarial hero:
+       tighter padding, smaller heading, and the fact strip reduced
+       to a single quiet line. The point is to get the agenda above
+       the fold. */
+    .mtg-hero.compact { padding: 12px 18px; margin-bottom: 12px; }
+    .mtg-hero.compact h1 { font-size: 16px; max-width: 100%; }
+    .mtg-hero.compact .crumb { margin-bottom: 3px; font-size: 11px; }
+    .mtg-hero.compact .facts { margin-top: 7px; gap: 6px 16px; font-size: 11.5px; }
+    .mtg-hero.compact .facts .fact { opacity: .82; }
+    .mtg-hero.compact .facts .icon { width: 13px; height: 13px; }
+
+    /* ── Member band: the meeting officers ───────────────────── */
+    .member-band {
+      /* Flex first as a fallback for engines without CSS Grid; the
+         grid rule below overrides it wherever Grid is supported. */
+      display: flex; flex-wrap: wrap; align-items: flex-start;
+      gap: 14px; margin-bottom: 14px;
+    }
+    .member-band > .ic-card:first-child { flex: 1 1 58%; min-width: 260px; }
+    .member-band > .ic-card:last-child  { flex: 1 1 30%; min-width: 190px; }
+    @supports (display: grid) {
+      .member-band {
+        display: grid; grid-template-columns: minmax(0, 520px);
+      }
+    }
+    .member-band .ic-card { margin: 0; }
+
+    .officers-mini .ic-body { padding: 10px 14px; }
+    .officers-mini .off-line {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 10px; padding: 4px 0;
+    }
+    .officers-mini .off-line + .off-line { border-top: 1px dashed #e3e7f0; }
+    .officers-mini .off-lbl {
+      font-size: 10.5px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0;
+    }
+    .officers-mini .off-val {
+      font-size: 12.5px; font-weight: 600; color: #0f172a; text-align: right;
+    }
+
+
+    @media (max-width: 860px) {
+      .member-band { grid-template-columns: 1fr; }
+      .mtg-hero.compact h1 { font-size: 15px; }
+    }
+    .mtg-hero .pill {
+      display: inline-block; padding: 4px 12px; border-radius: 14px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      background: rgba(245,201,106,.18); color: #f5c96a;
+    }
+    .mtg-hero .pill.green   { background: rgba(34,197,94,.22);  color: #86efac; }
+    .mtg-hero .pill.orange  { background: rgba(251,146,60,.22); color: #fdba74; }
+    .mtg-hero .pill.red     { background: rgba(239,68,68,.22);  color: #fca5a5; }
+
+    /* ── Quick-jump navigation pills ────────────────────────── */
+    .quick-nav {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 10px 14px; margin-bottom: 18px;
+      background: #fff; border: 1px solid #e3e7f0; border-radius: 8px;
+      align-items: center;
+    }
+    .quick-nav .qn-label {
+      font-size: 11px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px;
+    }
+    .quick-nav a {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 14px;
+      background: #f1f5f9; color: #334155;
+      text-decoration: none;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid transparent;
+      transition: all .15s;
+    }
+    .quick-nav a:hover {
+      background: #0d1f45; color: #f5c96a;
+    }
+    .quick-nav a .qn-num {
+      display: inline-flex;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      align-items: center; justify-content: center;
+      background: #0d1f45; color: #f5c96a;
+      font-size: 10px; font-weight: 700;
+    }
+    .quick-nav a:hover .qn-num {
+      background: #f5c96a; color: #0d1f45;
+    }
+
+    /* ── Workflow phase banner ─────────────────────────────── */
+    .phase {
+      display: flex; align-items: center; gap: 10px;
+      margin: 26px 0 12px; padding: 0 4px;
+      scroll-margin-top: 12px;
+    }
+    .phase:first-of-type { margin-top: 4px; }
+    .phase .num {
+      display: inline-flex;
+      width: 28px; height: 28px;
+      background: #0d1f45; color: #f5c96a;
+      border-radius: 50%;
+      align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .phase .lbl {
+      font-size: 11px; font-weight: 700;
+      color: #475569; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .phase .ttl {
+      font-size: 16px; font-weight: 700; color: #0f172a;
+    }
+    .phase .meta {
+      margin-left: auto;
+      font-size: 12px; color: #64748b;
+    }
+
+    /* ── Generic 2-col grid ──────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-2.wide-narrow { grid-template-columns: 2fr 1fr; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-2.wide-narrow { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards (lighter than the existing .card) ────────────── */
+    .ic-card {
+      background: #fff;
+      border: 1px solid #e3e7f0;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(13,31,69,.05);
+      overflow: hidden;
+    }
+    .ic-head {
+      padding: 11px 14px;
+      border-bottom: 1px solid #e3e7f0;
+      font-size: 12px; font-weight: 700;
+      color: #475569; text-transform: uppercase; letter-spacing: 0.05em;
+      /* The heading is an icon followed by a bare text node, which the
+         browser treats as two separate flex items. `space-between`
+         would therefore fling the label to the far right, away from
+         its icon. Pack everything left instead and push only genuine
+         trailing controls (buttons, badges, forms) to the right. */
+      display: flex; align-items: center; justify-content: flex-start;
+      gap: 7px;
+    }
+    /* Flexbox `gap` is unsupported on older engines (Safari < 14.1,
+       Chrome < 84), where the icon would sit flush against its label.
+       An explicit margin on the icon works everywhere. */
+    .ic-head > svg { margin-right: 6px; }
+
+    /* Anything genuinely "trailing" in a card heading sits hard right. */
+    .ic-head > form,
+    .ic-head > .btn,
+    .ic-head > .badge,
+    .ic-head > span:last-child:not(:first-of-type) { margin-left: auto; }
+
+    .ic-body { padding: 14px; font-size: 13px; }
+
+    /* Setup & Distribution: notes on the left, type + officers on the right. */
+    .setup-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 10px; align-items: stretch; }
+    .setup-side { display: flex; flex-direction: column; gap: 10px; }
+    .setup-notes .notes-box { max-height: 260px; overflow: auto; }
+    @media (max-width: 760px) { .setup-split { grid-template-columns: 1fr; } }
+    .setup-compact { gap: 10px; }
+    .setup-compact .ic-head { padding: 7px 12px; font-size: 11px; }
+    .setup-compact .ic-body { padding: 8px 12px; font-size: 12px; }
+    .setup-compact .officer-row { padding: 3px 0; gap: 8px; }
+    .setup-compact .officer-row .ico { width: 26px; height: 26px; font-size: 13px; }
+    .setup-compact .officer-row .ico .icon { width: 14px; height: 14px; }
+    .setup-compact .officer-row .label { font-size: 10px; }
+    .setup-compact .officer-row .name { font-size: 12.5px; }
+
+    /* Officers display */
+    .officer-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .officer-row + .officer-row { border-top: 1px solid #f1f5f9; }
+    .officer-row .ico {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: #f1f5f9; color: #0d1f45;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .officer-row .label {
+      font-size: 11px; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .officer-row .name {
+      font-size: 13px; font-weight: 600;
+      color: #0f172a; margin-top: 1px;
+    }
+
+    /* Notes box */
+    .notes-box {
+      background: #fffbeb; border-left: 3px solid #f59e0b;
+      padding: 10px 12px; border-radius: 4px;
+      font-size: 13px; line-height: 1.5;
+    }
+
+
+
+    /* ─────────────────────────────────────────────────────── */
+    /* PHASE 3 — split view: agenda LEFT + comments RIGHT       */
+    /* ─────────────────────────────────────────────────────── */
+    .agenda-split {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    /* The comments panel follows the agenda list.
+       A Board of Trustees agenda can run to seventeen items or more.
+       With the panel fixed at the top of the page, selecting an item
+       near the bottom of the list left the comment box far above the
+       viewport, so a trustee had to scroll up to read or post, then
+       back down to pick the next item. Sticky positioning keeps the
+       panel beside whichever item is on screen.
+
+       `top` clears the 56px sticky topbar plus a small gap.
+       `max-height` and the inner scroll stop a long comment thread
+       from growing taller than the screen, which would defeat the
+       stickiness. */
+    .agenda-right {
+      position: sticky;
+      top: 68px;
+      max-height: calc(100vh - 84px);
+      display: flex;
+      flex-direction: column;
+    }
+    .agenda-right > .ic-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;          /* lets the body shrink so it can scroll */
+      max-height: 100%;
+    }
+    .agenda-right .cmt-panel-body {
+      overflow-y: auto;
+      min-height: 120px;
+    }
+
+    @media (max-width: 1024px) {
+      .agenda-split { grid-template-columns: 1fr; }
+      /* Single column: there is nothing to sit beside, and a sticky
+         panel would cover the list. The script scrolls to the panel
+         instead. */
+      .agenda-right {
+        position: static;
+        max-height: none;
+      }
+      .agenda-right .cmt-panel-body { overflow-y: visible; }
+    }
+
+    /* LEFT: agenda items list */
+    .agenda-tabs {
+      background: #fff; border: 1px solid #e3e7f0; border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(13,31,69,.05);
+      overflow: hidden;
+    }
+    .agenda-tab-head {
+      background: #f8fafc;
+      border-bottom: 1px solid #e3e7f0;
+    }
+    .agenda-tab-head .tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 700;
+      color: #0d1f45;
+      border-bottom: 2px solid #f5c96a;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .agenda-tab-body { padding: 14px; }
+
+    /* Agenda items list */
+    .ai-list { display: flex; flex-direction: column; gap: 8px; }
+    .ai {
+      padding: 12px;
+      border: 1px solid #e3e7f0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .ai:hover { border-color: #f5c96a; background: #fffbeb; }
+    .ai.selected {
+      border-color: #0d1f45; background: #fffbeb;
+      box-shadow: 0 0 0 2px rgba(245,201,106,.3);
+    }
+    .ai-row { display: flex; align-items: flex-start; gap: 10px; }
+    .ai-num {
+      display: inline-flex;
+      width: 26px; height: 26px;
+      background: #0d1f45; color: #f5c96a;
+      border-radius: 50%;
+      align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px;
+      flex-shrink: 0;
+    }
+    .ai-body { flex: 1; min-width: 0; }
+    .ai-title {
+      font-weight: 600; font-size: 13px; color: #0f172a;
+      line-height: 1.4;
+    }
+    .ai-meta {
+      margin-top: 5px;
+      display: flex; flex-wrap: wrap; gap: 5px 10px;
+      font-size: 11px; color: #64748b;
+      align-items: center;
+    }
+    .ai-meta .badge { font-size: 10px; }
+    .ai-source {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: #ece8ff; color: #6d28d9;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 600;
+    }
+
+    /* "Previous Minutes" agenda item — special styling for the
+       parliamentary minutes-review item. */
+    .ai.is-prev-minutes {
+      background: #fffbeb;
+      border-color: #fbbf24;
+    }
+    .ai.is-prev-minutes.selected {
+      box-shadow: 0 0 0 2px rgba(245, 201, 106, 0.45);
+    }
+    .ai-prev-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: #f59e0b; color: #fff;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+
+    /* The item's PDF: open it to read and comment, or (Secretary)
+       attach or replace it. */
+    .item-file {
+      margin-top: 8px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .item-file .src { font-size: 11px; color: #64748b; word-break: break-word; min-width: 0; }
+    .item-file .btn { white-space: normal; text-align: left; max-width: 100%; }
+    /* Grid columns may shrink below their content on phones. */
+    .agenda-left, .agenda-right, .ai-body { min-width: 0; }
+    .item-file .src.is-bad { color: #c0392b; font-weight: 600; }
+    .item-file form { display: inline; margin: 0; }
+    .item-file .file-btn { position: relative; overflow: hidden; cursor: pointer; }
+    .item-file .file-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+    .item-file .file-btn:focus-within { box-shadow: 0 0 0 3px rgba(26,61,128,.3); }
+
+    /* Where a comment points in the document */
+    .cmt-where { display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; font-size: 12px; }
+    .cmt-where .pg { flex-shrink: 0; font-weight: 700; color: #7a4b00; background: #fff1d6; border-radius: 4px; padding: 0 6px; }
+    .cmt-where .q { font-style: italic; color: #2a3554; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .cmt-where a { flex-shrink: 0; color: #1a3d80; font-weight: 600; white-space: nowrap; }
+    .cmt-own { display: flex; gap: 12px; align-items: flex-start; margin-top: 6px; font-size: 12px; }
+    .cmt-own summary { cursor: pointer; color: #1a3d80; font-weight: 600; list-style: none; }
+    .cmt-own summary::-webkit-details-marker { display: none; }
+    .cmt-own details[open] { flex: 1; }
+    .cmt-own textarea { width: 100%; min-height: 64px; margin-top: 6px; font: inherit; font-size: 13px; padding: 6px 8px; border: 1.5px solid #e3e7f0; border-radius: 6px; resize: vertical; }
+    .cmt-own .del { background: none; border: 0; padding: 0; color: #c0392b; font-weight: 600; cursor: pointer; font-size: 12px; }
+    .edited-tag { color: #94a3b8; font-size: 11px; }
+
+    /* Static example/mockup of a correction comment.
+       Shown only on the Previous Minutes agenda item so trustees
+       and panelists see at a glance what the page/line correction
+       format looks like before they open the composer. */
+    .pm-example {
+      margin-top: 10px;
+      background: #fefce8;
+      border: 1px solid #facc15;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .pm-example-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .pm-example-tag {
+      background: #ca8a04; color: #fff;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .pm-example-desc {
+      font-size: 11px; color: #713f12;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+    .pm-example-row {
+      display: flex; gap: 10px; align-items: stretch;
+    }
+    .pm-example-field {
+      display: flex; flex-direction: column;
+      background: #fff; border: 1px solid #fde047; border-radius: 6px;
+      padding: 6px 10px;
+      min-width: 60px;
+    }
+    .pm-example-field.pm-example-grow { flex: 1; }
+    .pm-example-label {
+      font-size: 9px; font-weight: 700; color: #78350f;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+    .pm-example-value {
+      font-size: 14px; font-weight: 700; color: #0f172a;
+    }
+    .pm-example-text {
+      font-size: 12px; font-weight: 500; font-style: italic;
+      color: #1e293b; line-height: 1.4;
+    }
+    .pm-example-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed #fcd34d;
+      font-size: 11px; color: #78350f;
+      flex-wrap: wrap; gap: 6px;
+    }
+    .pm-example-foot-l { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .pm-example-foot-r { color: #a16207; font-style: italic; }
+
+    /* Page / Line badges on minutes-review comments */
+    .pl-badge {
+      display: inline-flex; align-items: center;
+      background: #fef3c7; color: #78350f;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 700;
+    }
+
+    /* "Addressed" status pill on comments */
+    .status-pill {
+      display: inline-flex; align-items: center;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 700;
+    }
+    .status-pill.open       { background: #fee2e2; color: #991b1b; }
+    .status-pill.addressed  { background: #dcfce7; color: #166534; }
+
+    /* Page / Line input row in the composer */
+    .pl-row {
+      display: flex; gap: 8px; margin-bottom: 8px;
+    }
+    .pl-row .pl-field {
+      display: flex; flex-direction: column; flex: 1; min-width: 0;
+    }
+    .pl-row .pl-field input { min-width: 0; width: 100%; box-sizing: border-box; }
+    .pl-row .pl-field label {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-bottom: 3px;
+    }
+    .pl-row .pl-field input {
+      padding: 6px 10px;
+      border: 1px solid #e3e7f0; border-radius: 6px;
+      font-size: 13px; font-family: inherit;
+    }
+    .ai-cmt-count {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: #dce8ff; color: #1a3d80;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 600;
+    }
+
+    /* RIGHT: Comment panel */
+    .cmt-panel-head {
+      padding: 12px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e3e7f0;
+    }
+    .cmt-panel-head .cmt-target {
+      font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .cmt-panel-head .cmt-item {
+      font-size: 13px; font-weight: 600; color: #0f172a;
+    }
+    .cmt-panel-body {
+      padding: 14px;
+      max-height: 480px; overflow-y: auto;
+    }
+    .ai-desc {
+      margin-top: 5px; font-size: 12.5px; line-height: 1.5; color: #475569;
+      padding-left: 10px; border-left: 2px solid #e3e7f0;
+    }
+
+    .cmt-thread            { display: none; flex-direction: column; gap: 10px; }
+    .cmt-thread.is-open    { display: flex; }
+    .cmt {
+      background: #f8fafc;
+      border-left: 3px solid #1a3d80;
+      padding: 10px 12px;
+      border-radius: 0 6px 6px 0;
+    }
+    .cmt .who {
+      font-size: 12px; color: #475569; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .cmt .who strong { color: #0f172a; }
+    .cmt .who .role-tag {
+      background: #fff; color: #475569;
+      padding: 1px 6px; border-radius: 8px;
+      font-size: 10px; font-weight: 600;
+      border: 1px solid #e3e7f0;
+    }
+    .cmt .body { font-size: 13px; color: #1e293b; line-height: 1.5; }
+    .cmt-empty {
+      text-align: center; padding: 28px 14px;
+      color: #94a3b8; font-size: 13px;
+    }
+
+    .cmt-composer {
+      padding: 12px 14px;
+      border-top: 1px solid #e3e7f0;
+      background: #f8fafc;
+    }
+    .cmt-composer .target-select {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid #e3e7f0; border-radius: 6px;
+      font-size: 12px; font-family: inherit;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .cmt-composer textarea {
+      width: 100%; min-height: 70px; padding: 8px 10px;
+      border: 1px solid #e3e7f0; border-radius: 6px;
+      font-size: 13px; font-family: inherit; resize: vertical;
+      box-sizing: border-box;
+    }
+    .cmt-composer-actions {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 8px;
+    }
+    .cmt-composer-actions .hint {
+      font-size: 11px; color: #94a3b8;
+    }
+
+    /* ── Meeting status banner (Start / End Meeting + state) ─── */
+    .status-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+    .status-banner.distributed { background: #f0f5ff; border-color: #c7d2fe; }
+    .status-banner.in-session  { background: #fef2f2; border-color: #fca5a5; }
+    .status-banner.completed   { background: #f0fdf4; border-color: #86efac; }
+    .status-banner .sb-info { flex: 1; display: flex; align-items: center; gap: 10px; }
+    .status-banner .sb-ico {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .status-banner.distributed .sb-ico { background: #4338ca; color: #fff; }
+    .status-banner.in-session  .sb-ico { background: #dc2626; color: #fff; animation: pulse 2s infinite; }
+    .status-banner.completed   .sb-ico { background: #16a34a; color: #fff; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); }
+      50%      { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+    }
+    .status-banner .sb-text .t {
+      font-size: 13px; font-weight: 700;
+    }
+    .status-banner.distributed .sb-text .t { color: #312e81; }
+    .status-banner.in-session  .sb-text .t { color: #991b1b; }
+    .status-banner.completed   .sb-text .t { color: #14532d; }
+    .status-banner .sb-text .d {
+      font-size: 12px; margin-top: 2px;
+    }
+    .status-banner.distributed .sb-text .d { color: #4338ca; }
+    .status-banner.in-session  .sb-text .d { color: #b91c1c; }
+    .status-banner.completed   .sb-text .d { color: #166534; }
+
+    /* ── Phase pill on each comment (Pre-Meeting / In-Session) ─ */
+    .phase-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 1px 7px; border-radius: 8px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .phase-pill.pre-meeting { background: #e0e7ff; color: #3730a3; }
+    .phase-pill.in-session  { background: #fee2e2; color: #991b1b; }
+
+    /* ── Composer phase toggle row ────────────────────────── */
+    .phase-toggle-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+    }
+    .phase-toggle-row label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; color: #991b1b; cursor: pointer;
+    }
+    .phase-toggle-row input[type="checkbox"] {
+      margin: 0;
+    }
+    .phase-toggle-row .phase-hint {
+      font-size: 11px; color: #b91c1c; margin-left: auto;
+    }
+
+    /* Attendees table (Phase 4) */
+    .att-table { width: 100%; border-collapse: collapse; }
+    .att-table th {
+      text-align: left;
+      font-size: 11px; font-weight: 700;
+      color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 10px 14px; border-bottom: 1px solid #e3e7f0;
+      background: #f8fafc;
+    }
+    .att-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .att-table tr:last-child td { border-bottom: none; }
+    .att-table .nm { font-weight: 500; color: #0f172a; }
+    .att-table .rl { color: #64748b; font-size: 12px; }
+
+    /* A video agenda item (e.g. the President's Report). */
+    .vid-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+               background: #fff4dc; color: #8a5a00; border-radius: 8px; padding: 1px 6px; margin-right: 4px; }
+    .hero-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+    .hero-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.28); }
+    .hero-btn:hover { background: rgba(255,255,255,.2); }
+    .hero-del:hover { background: #c0392b; border-color: #c0392b; }
+
+    /* AI Briefing — one entry per agenda item */
+    .bf-card .ic-head { flex-wrap: wrap; }
+    .bf-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+    .bf-actions .btn[disabled], .bf-pick .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .bf-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; margin-bottom: 8px;
+      background: #f8fafc; border: 1px solid #eef1f6; border-radius: 8px; }
+    .bf-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #334155; cursor: pointer; }
+    .bf-pick-hint { font-size: 11.5px; color: #64748b; }
+    .bf-tick, .bf-check input { width: 16px; height: 16px; accent-color: #1a3d80; cursor: pointer; flex-shrink: 0; margin: 4px 0 0; }
+    .bf-check input { margin: 0; }
+    .bf-tick-space { width: 16px; flex-shrink: 0; }
+    .bf-item-tools { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .bf-one { padding: 4px 10px; font-size: 12px; }
+    .bf-queued { font-size: 11.5px; font-weight: 600; color: #1a3d80; background: #e7eefb; border-radius: 10px; padding: 2px 9px; }
+    .bf-item.is-queued { background: #fbfcff; }
+    .bf-meta { font-size: 12px; color: #64748b; margin: 0 0 10px; }
+    .bf-progress { background: #f1f5fd; border: 1px solid #d6e0f5; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+    .bf-progress-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #0d1f45; font-weight: 600; }
+    .bf-spin { width: 14px; height: 14px; flex-shrink: 0; border: 2px solid #1a3d80; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+    .bf-bar { height: 6px; background: #dfe6f3; border-radius: 3px; margin: 10px 0 8px; overflow: hidden; }
+    .bf-bar span { display: block; height: 100%; background: #1a3d80; border-radius: 3px; transition: width .4s ease; }
+    .bf-note { font-size: 12px; color: #475569; margin: 0; }
+    .bf-list { list-style: none; margin: 0; padding: 0; }
+    .bf-item { padding: 12px 0; border-top: 1px solid #eef1f6; }
+    .bf-item:first-child { border-top: 0; padding-top: 2px; }
+    .bf-item-head { display: flex; align-items: flex-start; gap: 10px; }
+    .bf-num {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px; background: #0d1f45; color: #f5c96a;
+      font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .bf-item-title { flex: 1; min-width: 0; font-size: 13.5px; color: #0f172a; line-height: 1.35; cursor: pointer; }
+    /* Dropdown on each summarised item */
+    .bf-toggle { flex-shrink: 0; width: 24px; height: 24px; border: 1px solid #e3e7f0; border-radius: 6px; background: #fff;
+                 color: #1a3d80; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+    .bf-toggle:hover { background: #f1f5fd; }
+    .bf-toggle .icon { transition: transform .15s ease; }
+    .bf-toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
+    .bf-expand-all { margin-left: auto; background: none; border: 0; color: #1a3d80; font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 4px; }
+    .bf-expand-all:hover { text-decoration: underline; }
+    .bf-cancel { margin-left: auto; }
+    .bf-item-body { padding-bottom: 2px; }
+    .bf-sub { display: block; font-size: 11.5px; color: #64748b; margin-top: 2px; }
+    .bf-open { flex-shrink: 0; font-size: 12px; font-weight: 600; color: #1a3d80; white-space: nowrap; }
+    .bf-summary, .bf-points, .bf-action, .bf-muted, .bf-warn { margin: 6px 0 0 94px; font-size: 13px; line-height: 1.55; color: #1e293b; max-width: 85ch; }
+    .bf-points { padding-left: 18px; }
+    .bf-points li { margin: 2px 0; }
+    .bf-action span { font-weight: 700; color: #0d1f45; }
+    .bf-muted { color: #94a3b8; font-size: 12.5px; }
+    .bf-warn { color: #92400e; font-size: 12.5px; }
+    @media (max-width: 640px) {
+      .bf-summary, .bf-points, .bf-action, .bf-muted, .bf-warn { margin-left: 0; }
+      .bf-item-head { flex-wrap: wrap; }
+      .bf-item-tools { margin-left: 94px; }
+    }
+    .brief-empty {
+      padding: 18px 14px; background: #f8fafc; border-radius: 6px;
+      font-size: 13px; color: #64748b; text-align: center;
+    }
+
+    /* Empty state */
+    .empty-mini {
+      text-align: center; padding: 28px 14px;
+      color: #94a3b8; font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'Meeting Details'}) %>
+    <div class="page">
+
+      <% if (!meeting) { %>
+        <div class="empty">
+          <div class="ei"><svg class="icon"><use href="#i-inbox" xlink:href="#i-inbox"/></svg></div>
+          <h3>Meeting Not Found</h3>
+          <p>The meeting record (#<%= id %>) could not be loaded. The MySQL service may be unavailable.</p>
+          <a href="/meeting" class="btn btn-light"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Back to Meetings</a>
+        </div>
+      <% } else { %>
+
+      <%
+        // ── Permissions ───────────────────────────────────────
+        const isSecretary = ['admin','secretary'].includes(userRole);
+        // Trustees and Council Members get a
+        // condensed page: the setup/briefing material is collapsed into
+        // one short band so the agenda and comments — the only parts
+        // they actually act on — sit near the top of the screen.
+        const isMemberView = userRole === 'member';
+        // Pre-meeting comments are member input. The composer is
+        // therefore shown only to Trustees and Council Members.
+        // Secretarial roles can still read every comment so they
+        // can compile them into a single PDF, but they do not
+        // post their own.
+        const canComment  = userRole === 'member';
+
+        // ── Status pill colour ────────────────────────────────
+        let statusCls = 'pill';
+        if (meeting.status === 'Completed')       statusCls = 'pill green';
+        else if (meeting.status === 'Cancelled')  statusCls = 'pill red';
+        else if (meeting.status === 'In-Session') statusCls = 'pill orange';
+
+
+        // ── Date formatting ───────────────────────────────────
+        const meetingDate = new Date(meeting.meeting_date).toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        // ── Helpers for role labels ───────────────────────────
+        function commenterRole(c) { return roleLabel(c, { short: true }); }
+
+        // For the comment-target select dropdown
+        const firstItem = agendaItems && agendaItems.length > 0 ? agendaItems[0] : null;
+      %>
+
+      <% if (typeof savedNotice !== 'undefined' && savedNotice) { %>
+        <div class="alert a-ok" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg> Your changes to this meeting were saved.
+        </div>
+      <% } %>
+      <% if (typeof editLocked !== 'undefined' && editLocked) { %>
+        <div class="alert a-warn" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> This meeting is <%= String(meeting.status).toLowerCase() %>, so it can no longer be edited.
+        </div>
+      <% } %>
+      <% if (typeof commentError !== 'undefined' && commentError) { %>
+        <div class="alert a-err" style="margin-bottom:14px" role="alert">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= commentError %>
+        </div>
+      <% } %>
+      <% if (typeof archivedCount !== 'undefined' && archivedCount !== null) { %>
+        <div class="alert a-ok" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg>
+          The meeting has ended. Its <%= archivedCount %> agenda item<%= archivedCount === 1 ? ' was' : 's were' %> saved to the
+          <a href="/archive/agendas">Digital Archive (Meeting Agendas)</a>. Members now need your approval to view them.
+        </div>
+      <% } %>
+      <% if (typeof fileError !== 'undefined' && fileError) { %>
+        <div class="alert a-err" style="margin-bottom:14px">
+          <svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg>
+          <%= fileError === 'size'
+                ? 'That file is larger than the upload limit (' + Number(process.env.MAX_UPLOAD_MB || 100) + ' MB for PDF or Word, ' + (Number(process.env.MAX_VIDEO_UPLOAD_MB || 1024) >= 1024 ? Number(process.env.MAX_VIDEO_UPLOAD_MB || 1024) / 1024 + ' GB' : Number(process.env.MAX_VIDEO_UPLOAD_MB || 1024) + ' MB') + ' for videos).'
+                : fileError === 'ffmpeg'
+                ? 'Videos cannot be read on this server yet: install ffmpeg and add it to PATH.'
+                : fileError === 'closed'
+                  ? 'This meeting is completed, so its documents can no longer be changed.'
+                  : fileError === 'convert'
+                    ? 'That Word file could not be turned into a PDF. Check that it opens in Word, or attach a PDF instead.'
+                    : 'Only PDF, Word (.docx) or video files can be attached to an agenda item.' %>
+        </div>
+      <% } %>
+
+      <!-- ──────────────────────────────────────────────────── -->
+      <!-- HERO HEADER                                            -->
+      <!-- ──────────────────────────────────────────────────── -->
+      <div class="mtg-hero<%= isMemberView ? ' compact' : '' %>">
+        <div class="crumb"><a href="/meeting"><svg class="icon"><use href="#i-arrow-left" xlink:href="#i-arrow-left"/></svg> Meeting Records</a></div>
+        <div class="head-row">
+          <h1><%= meeting.title %></h1>
+          <span class="<%= statusCls %>"><%= meeting.status %></span>
+          <% if (isSecretary) { %>
+            <span class="hero-actions">
+              <% if (!['Completed','Cancelled'].includes(meeting.status)) { %>
+                <a href="/meeting/<%= id %>/edit" class="btn btn-sm hero-btn"><svg class="icon icon-sm"><use href="#i-edit" xlink:href="#i-edit"/></svg> Edit</a>
+              <% } %>
+              <% if (meeting.status !== 'Completed') { %>
+                <a href="/meeting/<%= id %>/delete" class="btn btn-sm hero-btn hero-del"><svg class="icon icon-sm"><use href="#i-x" xlink:href="#i-x"/></svg> Delete</a>
+              <% } %>
+            </span>
+          <% } %>
+        </div>
+        <div class="facts">
+          <div class="fact"><svg class="icon"><use href="#i-calendar" xlink:href="#i-calendar"/></svg> <%= meetingDate %></div>
+          <div class="fact"><svg class="icon"><use href="#i-clock" xlink:href="#i-clock"/></svg> <%= meeting.meeting_time %></div>
+          <div class="fact"><svg class="icon"><use href="#i-pin" xlink:href="#i-pin"/></svg> <%= meeting.venue %></div>
+          <div class="fact"><svg class="icon"><use href="#i-building" xlink:href="#i-building"/></svg> <%= meeting.meeting_type %></div>
+          <div class="fact"># <%= meeting.meeting_number %></div>
+          <div class="fact"><svg class="icon"><use href="#i-briefcase" xlink:href="#i-briefcase"/></svg> <%= meeting.mode %></div>
+          <% if (meeting.quorum_required) { %>
+            <div class="fact"><svg class="icon"><use href="#i-users" xlink:href="#i-users"/></svg> Quorum needed: <%= meeting.quorum_required %></div>
+          <% } %>
+          <%
+            // Pre-meeting comment deadline (a DATE; arrives as a Date
+            // from MySQL or as "YYYY-MM-DD" in demo data).
+            let _dl = null;
+            if (meeting.comment_deadline) {
+              const v = meeting.comment_deadline;
+              const m = typeof v === 'string' && /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+              _dl = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(v);
+              if (isNaN(_dl)) _dl = null;
+            }
+            const _ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const _todayYmd = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+            const _dlPassed = _dl && _ymd(_dl) < _todayYmd;
+          %>
+          <% if (_dl) { %>
+            <div class="fact<%= _dlPassed ? ' is-past' : '' %>" title="Pre-meeting comment deadline">
+              <svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg>
+              <%= _dlPassed ? 'Comment deadline passed' : 'Comments due' %>
+              <%= _dl.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- The quick-jump navigation and the "Phase N" prefixes were
+           removed: every section heading is self-explanatory on its
+           own, and the numbering added visual weight without telling
+           the reader anything. Section ids (#phase-1 ... #phase-5)
+           are kept so existing links still resolve. -->
+
+<% if (isMemberView) { %>
+      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- MEMBER LAYOUT (Trustees & Council Members)             -->
+      <!--                                                        -->
+      <!-- Members come here to read the agenda and leave         -->
+      <!-- comments, so everything above that is compressed into  -->
+      <!-- a single short band with the officers, then the       -->
+      <!-- briefing across the full width.                        -->
+      <!-- ══════════════════════════════════════════════════════ -->
+
+      <div class="member-band">
+        <!-- Right · Officers (compact) -->
+        <div class="ic-card officers-mini">
+          <div class="ic-head"><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> Officers</div>
+          <div class="ic-body">
+            <div class="off-line">
+              <span class="off-lbl">Called by</span>
+              <span class="off-val"><%= meeting.called_by_name || '—' %></span>
+            </div>
+            <div class="off-line">
+              <span class="off-lbl">Presided by</span>
+              <span class="off-val"><%= meeting.presided_by_name || '—' %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if (meeting.notes_for_members) { %>
+        <div class="ic-card" style="margin-bottom:14px">
+          <div class="ic-head"><svg class="icon"><use href="#i-pin" xlink:href="#i-pin"/></svg> Notes for Members</div>
+          <div class="ic-body"><div class="notes-box"><%= meeting.notes_for_members %></div></div>
+        </div>
+      <% } %>
+
+      <!-- Briefing spans the full width, directly beneath the band. -->
+      <% if (meeting.status === 'Completed') { %>
+        <!-- After the meeting the agendas (and their summaries) are closed. -->
+        <div class="ic-card" style="margin-bottom:16px">
+          <div class="ic-body" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg>
+            <span style="flex:1;min-width:220px">Meeting completed. Its agendas are in the Digital Archive.</span>
+            <a href="/archive/agendas" class="btn btn-light btn-sm"><svg class="icon icon-sm"><use href="#i-folder" xlink:href="#i-folder"/></svg> Go to Meeting Agendas</a>
+          </div>
+        </div>
+      <% } else { %>
+      <%- include('partials/briefing', { id, briefingData, briefingNotice: (typeof briefingNotice !== 'undefined' ? briefingNotice : null) }) %>
+      <% } %>
+
+<% } else { %>
+      <!-- ──────────────────────────────────────────────────── -->
+      <!-- PHASE 1 · SETUP & DISTRIBUTION  (secretarial view)     -->
+      <!-- ──────────────────────────────────────────────────── -->
+      <div class="phase" id="phase-1">
+        <span class="ttl">Setup &amp; Distribution</span>
+        <span class="meta">Notes for members, meeting type and officers</span>
+      </div>
+
+      <!-- Left: notes for members.  Right: meeting type, then officers. -->
+      <div class="setup-split setup-compact">
+        <div class="ic-card setup-notes">
+          <div class="ic-head"><svg class="icon"><use href="#i-pin" xlink:href="#i-pin"/></svg> Notes for Members</div>
+          <div class="ic-body">
+            <% if (meeting.notes_for_members) { %>
+              <div class="notes-box"><%= meeting.notes_for_members %></div>
+            <% } else { %>
+              <div class="muted">No notes for members.</div>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="setup-side">
+          <!-- Meeting type -->
+          <div class="ic-card">
+            <div class="ic-head"><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg> Meeting Type</div>
+            <div class="ic-body">
+              <div style="font-size:13px;font-weight:600"><%= meeting.meeting_type %></div>
+            </div>
+          </div>
+
+          <!-- Officers -->
+          <div class="ic-card">
+            <div class="ic-head"><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg> Officers</div>
+            <div class="ic-body">
+              <div class="officer-row">
+                <div class="ico"><svg class="icon"><use href="#i-megaphone" xlink:href="#i-megaphone"/></svg></div>
+                <div>
+                  <div class="label">Called by</div>
+                  <div class="name"><%= meeting.called_by_name || '—' %></div>
+                </div>
+              </div>
+              <div class="officer-row">
+                <div class="ico"><svg class="icon"><use href="#i-scale" xlink:href="#i-scale"/></svg></div>
+                <div>
+                  <div class="label">Presided by</div>
+                  <div class="name"><%= meeting.presided_by_name || '—' %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────── -->
+      <!-- PHASE 2 · BRIEFING                                     -->
+      <!-- ──────────────────────────────────────────────────── -->
+      <div class="phase" id="phase-2">
+        <span class="ttl">AI Briefing</span>
+        <span class="meta">A summary of each agenda item's document</span>
+      </div>
+
+      <%- include('partials/briefing', { id, briefingData, briefingNotice: (typeof briefingNotice !== 'undefined' ? briefingNotice : null) }) %>
+
+<% } %>
+
+      <!-- ──────────────────────────────────────────────────── -->
+      <!-- PHASE 3 · AGENDA + COMMENTS (split view)               -->
+      <!-- LEFT  · agenda PDF & item list                         -->
+      <!-- RIGHT · comment thread + composer                      -->
+      <!-- ──────────────────────────────────────────────────── -->
+      <div class="phase" id="phase-3">
+        <span class="ttl">Agenda &amp; Comments</span>
+        <span class="meta">
+          <% if (meeting.status === 'In-Session') { %>
+            <svg class="icon"><use href="#i-dot" xlink:href="#i-dot"/></svg> Live session — trustees post in-session comments
+          <% } else if (meeting.status === 'Completed') { %>
+            Meeting completed — comments are frozen
+          <% } %>
+        </span>
+      </div>
+
+      <!-- ── Live-status banner with Start/End Meeting (Secretary) ── -->
+      <%
+        const _isLive      = meeting.status === 'In-Session';
+        const _isCompleted = meeting.status === 'Completed';
+        const _bannerCls   = _isLive ? 'in-session' : (_isCompleted ? 'completed' : 'distributed');
+      %>
+      <div class="status-banner <%= _bannerCls %>">
+        <div class="sb-info">
+          <div class="sb-ico">
+            <% if (_isLive) { %><svg class="icon"><use href="#i-dot" xlink:href="#i-dot"/></svg><% } else if (_isCompleted) { %><svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg><% } else { %><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg><% } %>
+          </div>
+          <div class="sb-text">
+            <% if (_isLive) { %>
+              <div class="t">Meeting is in session</div>
+            <% } else if (_isCompleted) { %>
+              <div class="t">Meeting completed</div>
+            <% } else { %>
+              <div class="t">Pre-meeting phase</div>
+            <% } %>
+          </div>
+        </div>
+        <% if (isSecretary) { %>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <% if (!_isLive && !_isCompleted) { %>
+              <form action="/meeting/<%= id %>/start" method="POST" style="margin:0">
+                <button type="submit" class="btn btn-navy btn-sm" onclick="return confirm('Start the meeting now? Members will be able to post in-session comments.')">▶ Start Meeting</button>
+              </form>
+            <% } else if (_isLive) { %>
+              <form action="/meeting/<%= id %>/end" method="POST" style="margin:0">
+                <button type="submit" class="btn btn-gold btn-sm" onclick="return confirm('End the meeting? In-session comments will be frozen after this.')">■ End Meeting</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="agenda-split">
+
+        <!-- ╭─── LEFT: Agenda items ───╮ -->
+        <div class="agenda-left">
+          <div class="agenda-tabs">
+            <div class="agenda-tab-head">
+              <span class="tab active"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Agenda Items (<%= agendaItems.length %>)</span>
+            </div>
+            <div class="agenda-tab-body">
+              <div id="tab-items">
+                <% if (agendaItems.length === 0) { %>
+                  <div class="empty-mini">No agenda items have been added yet.</div>
+                <% } else { %>
+                  <div class="ai-list">
+                    <% agendaItems.forEach((item, idx) => {
+                         const itemComments = comments.filter(c => c.item_id === item.item_id);
+                         const isPrevMinutes = item.item_category === 'Previous Minutes';
+                    %>
+                      <div id="item-<%= item.item_id %>" class="ai <%= idx === 0 ? 'selected' : '' %> <%= isPrevMinutes ? 'is-prev-minutes' : '' %>"
+                           data-item-id="<%= item.item_id %>"
+                           onclick="selectItem(<%= item.item_id %>)">
+                        <div class="ai-row">
+                          <span class="ai-num"><%= item.item_order %></span>
+                          <div class="ai-body">
+                            <div class="ai-title"><%= item.item_title %></div>
+                            <div class="ai-meta">
+                              <% if (isPrevMinutes) { %>
+                                <span class="ai-prev-pill"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Previous Minutes</span>
+                              <% } else { %>
+                                <span class="badge b-blue"><%= item.item_category %></span>
+                              <% } %>
+                              <% if (itemComments.length > 0) { %>
+                                <span class="ai-cmt-count"><svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg> <%= itemComments.length %></span>
+                              <% } %>
+                            </div>
+
+                            <!-- The item's paper — a PDF, or a VIDEO such as the
+                                 President's Report — read or watched and commented on
+                                 inside BOARDLINK. -->
+                            <% if (_isCompleted && !isSecretary && (item.item_pdf || item.item_video)) { %>
+                              <!-- After the meeting: closed, in the Digital Archive. -->
+                              <div class="item-file" onclick="event.stopPropagation()">
+                                <a href="/archive/agendas?item=<%= item.item_id %>#item-<%= item.item_id %>" class="btn btn-light btn-sm">
+                                  <svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg> Closed · Request access
+                                </a>
+                                <span class="src">In the Digital Archive</span>
+                              </div>
+                            <% } else if (item.item_pdf || item.item_video || (isSecretary && !_isCompleted)) { %>
+                              <div class="item-file" onclick="event.stopPropagation()">
+                                <% if (item.item_video) { %>
+                                  <a href="/meeting/<%= id %>/item/<%= item.item_id %>/review" class="btn btn-navy btn-sm">
+                                    <svg class="icon"><use href="#i-eye" xlink:href="#i-eye"/></svg>
+                                    <%= canComment && !_isCompleted ? 'Watch & comment' : 'Watch video' %>
+                                  </a>
+                                  <span class="src"><span class="vid-tag">Video</span>
+                                    <%= item.item_video_name || 'Video' %><% if (item.item_video_duration) { %>, <%= Math.floor(item.item_video_duration / 60) %>:<%= String(item.item_video_duration % 60).padStart(2, '0') %><% } %><% if (item.item_video_status === 'processing') { %> (subtitles being written)<% } else if (item.item_video_status === 'failed') { %> (no subtitles)<% } %>
+                                  </span>
+                                <% } else if (item.item_pdf) { %>
+                                  <a href="/meeting/<%= id %>/item/<%= item.item_id %>/review" class="btn btn-navy btn-sm">
+                                    <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg>
+                                    <%= canComment && !_isCompleted ? (isPrevMinutes ? 'Open the minutes & comment' : 'Open & comment') : 'Open document' %>
+                                  </a>
+                                  <% if (item.item_pdf_status === 'failed') { %>
+                                    <span class="src is-bad">This PDF could not be read. Please replace it.</span>
+                                  <% } else { %>
+                                    <span class="src">
+                                      <%= item.item_pdf_name || 'Document' %><% if (item.item_pdf_pages) { %>, <%= item.item_pdf_pages %> page<%= item.item_pdf_pages === 1 ? '' : 's' %><% } %><% if (item.item_pdf_status === 'processing') { %> (still being prepared)<% } %>
+                                    </span>
+                                  <% } %>
+                                <% } %>
+                                <% if (isSecretary && item.missingFile) { %>
+                                  <span class="src is-bad"><%= item.item_title %> has been removed or deleted. Attach it again.</span>
+                                <% } %>
+                                <% if (isSecretary && !_isCompleted) {
+                                     const _anchored = itemComments.filter(c => c.anchor_type).length; %>
+                                  <form action="/meeting/<%= id %>/item/<%= item.item_id %>/file" method="POST" enctype="multipart/form-data">
+                                    <label class="btn btn-light btn-sm file-btn">
+                                      <svg class="icon"><use href="#i-clip" xlink:href="#i-clip"/></svg>
+                                      <%= item.item_pdf || item.item_video ? 'Replace file' : 'Attach PDF, Word or video' %>
+                                      <input type="file" name="item_pdf" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm"
+                                             aria-label="<%= item.item_pdf || item.item_video ? 'Replace' : 'Attach' %> the file for item <%= item.item_order %>"
+                                             data-confirm="<%= _anchored ? 'This document has ' + _anchored + ' comment(s) pointing at places in it. After replacing it, those highlights may no longer line up. Replace it?' : '' %>"
+                                             onchange="if (this.files.length && (!this.dataset.confirm || confirm(this.dataset.confirm))) { this.form.submit(); } else { this.value = ''; }">
+                                    </label>
+                                  </form>
+                                <% } %>
+                              </div>
+                            <% } %>
+                          </div>
+                        </div>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ╭─── RIGHT: Comment thread for selected item ───╮ -->
+        <div class="agenda-right">
+          <div class="ic-card">
+            <div class="cmt-panel-head">
+              <div class="cmt-target"><svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg> Comments on Agenda Item</div>
+              <div class="cmt-item" id="selectedItemTitle">
+                <% if (firstItem) { %>
+                  <%= firstItem.item_order %>. <%= firstItem.item_title %>
+                <% } else { %>
+                  No agenda items yet
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Thread (server renders ALL comments, JS shows the right ones) -->
+            <div class="cmt-panel-body" id="cmtThread">
+              <% if (agendaItems.length === 0) { %>
+                <div class="cmt-empty">No agenda items have been added yet.</div>
+              <% } else {
+                   agendaItems.forEach((item, idx) => {
+                     const itemComments = comments.filter(c => c.item_id === item.item_id);
+                     const isPrevMinutes = item.item_category === 'Previous Minutes';
+              %>
+                <div class="cmt-thread thread-<%= item.item_id %> <%= idx === 0 ? 'is-open' : '' %>">
+                  <% if (itemComments.length === 0) { %>
+                    <div class="cmt-empty">
+                      <div style="font-size:24px;margin-bottom:6px"><svg class="icon"><use href="#i-message" xlink:href="#i-message"/></svg></div>
+                      <% if (isPrevMinutes) { %>
+                        No correction comments on the minutes yet.
+                        <% if (canComment) { %>
+                          
+                        <% } %>
+                      <% } else { %>
+                        No comments on this item yet.
+                        <% if (canComment) { %>
+                          
+                        <% } %>
+                      <% } %>
+                    </div>
+                  <% } else { %>
+                    <% itemComments.forEach(c => {
+                         const _phase = c.comment_phase === 'In-Session' ? 'in-session' : 'pre-meeting';
+                         const _phaseLabel = c.comment_phase === 'In-Session' ? 'In-Session' : 'Pre-Meeting';
+                    %>
+                      <div class="cmt" id="comment-<%= c.comment_id %>">
+                        <div class="who" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                          <strong><%= c.full_name %></strong>
+                          <span class="role-tag"><%= commenterRole(c) %></span>
+                          <span class="phase-pill <%= _phase %>">
+                            <svg class="icon icon-sm"><use href="<%= _phase === 'in-session' ? '#i-dot' : '#i-clipboard' %>" xlink:href="<%= _phase === 'in-session' ? '#i-dot' : '#i-clipboard' %>"/></svg>
+                            <%= _phaseLabel %>
+                          </span>
+                          <% if (!c.anchor_type && c.page_number != null && c.line_number != null) { %>
+                            <span class="pl-badge"><svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> p.<%= c.page_number %> · ln.<%= c.line_number %></span>
+                          <% } %>
+                          <% if (isPrevMinutes || isSecretary || c.status === 'Addressed') { %>
+                            <span class="status-pill <%= c.status === 'Addressed' ? 'addressed' : 'open' %>">
+                              <% if (c.status === 'Addressed') { %><svg class="icon icon-sm"><use href="#i-check" xlink:href="#i-check"/></svg> Done<% } else { %>Open<% } %>
+                            </span>
+                          <% } %>
+                          <span style="color:#94a3b8">·</span>
+                          <span style="color:#64748b"><%= new Date(c.commented_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) %></span>
+                          <% if (c.edited_at) { %><span class="edited-tag">(edited)</span><% } %>
+                          <% if (isSecretary && c.status !== 'Addressed') { %>
+                            <form action="/meeting/<%= id %>/comment/<%= c.comment_id %>/addressed" method="POST" style="margin:0 0 0 auto;display:inline">
+                              <button type="submit" class="btn btn-light btn-sm" style="padding:2px 8px;font-size:11px">Done</button>
+                            </form>
+                          <% } %>
+                        </div>
+                        <% if (c.video_time != null) {
+                             const _t = Math.floor(Number(c.video_time)); %>
+                          <div class="cmt-where">
+                            <span class="pg">▶ <%= Math.floor(_t / 60) %>:<%= String(_t % 60).padStart(2, '0') %></span>
+                            <span class="q">In the video</span>
+                            <a href="/meeting/<%= id %>/item/<%= item.item_id %>/review#comment-<%= c.comment_id %>">Show in video</a>
+                          </div>
+                        <% } %>
+                        <% if (c.anchor_type && c.page_number) { %>
+                          <div class="cmt-where">
+                            <span class="pg">p. <%= c.page_number %></span>
+                            <span class="q"><%= c.anchor_type === 'text' ? '“' + (c.anchor_quote || '') + '”' : 'Marked area' %></span>
+                            <% if (item.item_pdf) { %>
+                              <a href="/meeting/<%= id %>/item/<%= item.item_id %>/review#comment-<%= c.comment_id %>">Show in document</a>
+                            <% } %>
+                          </div>
+                        <% } %>
+                        <div class="body" style="margin-top:4px;white-space:pre-wrap"><%= c.comment_text %></div>
+                        <% if (canComment && !_isCompleted && String(c.user_id) === String(userId) && (c.status || 'Open') === 'Open') { %>
+                          <div class="cmt-own">
+                            <details>
+                              <summary>Edit</summary>
+                              <form action="/meeting/<%= id %>/comment/<%= c.comment_id %>/edit" method="POST">
+                                <textarea name="text" maxlength="4000" required aria-label="Edit your comment"><%= c.comment_text %></textarea>
+                                <button type="submit" class="btn btn-navy btn-sm" style="margin-top:6px">Save changes</button>
+                              </form>
+                            </details>
+                            <form action="/meeting/<%= id %>/comment/<%= c.comment_id %>/delete" method="POST"
+                                  onsubmit="return confirm('Delete this comment? This cannot be undone.');">
+                              <button type="submit" class="del">Delete</button>
+                            </form>
+                          </div>
+                        <% } %>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+              <% }) } %>
+            </div>
+
+            <!-- Composer -->
+            <% if (canComment && agendaItems.length > 0 && !_isCompleted) { %>
+              <form action="/meeting/<%= id %>/comment" method="POST" class="cmt-composer">
+                <!-- Phase indicator (only shown while In-Session) -->
+                <% if (_isLive) { %>
+                  <div class="phase-toggle-row">
+                    <label>
+                      <span style="font-size:14px"><svg class="icon"><use href="#i-dot" xlink:href="#i-dot"/></svg></span>
+                      <strong>Posting as In-Session comment</strong>
+                    </label>
+                    <span class="phase-hint">Meeting is live — your comment will be tagged In-Session</span>
+                  </div>
+                  <input type="hidden" name="comment_phase" value="In-Session">
+                <% } else { %>
+                  <input type="hidden" name="comment_phase" value="Pre-Meeting">
+                <% } %>
+                <select name="item_id" id="composerItemSelect" class="target-select" onchange="onComposerItemChange()" required>
+                  <% agendaItems.forEach((item, idx) => { %>
+                    <option value="<%= item.item_id %>"
+                            data-prev-minutes="<%= item.item_category === 'Previous Minutes' ? '1' : '0' %>"
+                            <%= idx === 0 ? 'selected' : '' %>>
+                      <%= item.item_category === 'Previous Minutes' ? '[Previous Minutes] ' : '' %>Comment on item <%= item.item_order %>: <%= item.item_title.length > 60 ? item.item_title.substring(0,60)+'…' : item.item_title %>
+                    </option>
+                  <% }) %>
+                </select>
+                <!-- Page / Line inputs (shown only when Previous Minutes selected) -->
+                <div class="pl-row" id="plRow" style="display:none">
+                  <div class="pl-field">
+                    <label for="pageInput">Page #</label>
+                    <input type="number" id="pageInput" name="page_number" min="1" placeholder="e.g. 14">
+                  </div>
+                  <div class="pl-field">
+                    <label for="lineInput">Line #</label>
+                    <input type="number" id="lineInput" name="line_number" min="1" placeholder="e.g. 32">
+                  </div>
+                </div>
+                <textarea name="comment_text" id="composerText" required maxlength="4000"
+                          placeholder="<%= _isLive ? 'Speak now or comment live — your remark will be recorded on this item…' : 'Share your thoughts on this agenda item…' %>"></textarea>
+                <div class="cmt-composer-actions">
+                  <span class="hint" id="composerHint">
+                    <% if (_isLive) { %>
+                      <svg class="icon"><use href="#i-dot" xlink:href="#i-dot"/></svg> Live — your comment will be recorded on this item as In-Session.
+                    <% } else { %>
+                    <% } %>
+                  </span>
+                  <button type="submit" class="btn <%= _isLive ? 'btn-gold' : 'btn-navy' %> btn-sm">
+                    <svg class="icon icon-sm"><use href="<%= _isLive ? '#i-dot' : '#i-upload' %>" xlink:href="<%= _isLive ? '#i-dot' : '#i-upload' %>"/></svg>
+                    <%= _isLive ? 'Post Live' : 'Post Comment' %>
+                  </button>
+                </div>
+              </form>
+            <% } else if (_isCompleted) { %>
+              <div class="cmt-composer" style="text-align:center;color:#64748b;font-size:12px;padding:18px 14px">
+                <svg class="icon"><use href="#i-check" xlink:href="#i-check"/></svg> Meeting completed. Comments are now frozen.
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ──────────────────────────────────────────────────── -->
+      <!-- PHASE 4 · COMPILE COMMENTS                             -->
+      <!-- Only visible to the Board Secretary. Minutes drafting  -->
+      <!-- and comment consolidation are done outside BOARDLINK   -->
+      <!-- (Google Drive / Word).                                 -->
+      <!-- ──────────────────────────────────────────────────── -->
+      <% if (isSecretary) { %>
+        <div class="phase" id="phase-4">
+          <span class="ttl">Compile Comments</span>
+          <span class="meta">Visible to the Board Secretary only</span>
+        </div>
+
+        <div class="ic-card" style="margin-bottom:14px">
+          <div class="ic-head">
+            <svg class="icon"><use href="#i-file" xlink:href="#i-file"/></svg> Compile comments
+            <span style="text-transform:none;font-weight:500;color:#94a3b8;font-size:11px">
+              <%= comments.length %> comment<%= comments.length === 1 ? '' : 's' %> on <%= agendaItems.length %> item<%= agendaItems.length === 1 ? '' : 's' %>
+            </span>
+          </div>
+          <div class="ic-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <a class="btn btn-navy btn-sm" href="/meeting/<%= id %>/comments/compiled.docx">
+                <svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download Word
+              </a>
+              <a class="btn btn-light btn-sm" href="/meeting/<%= id %>/comments/compiled.pdf">
+                <svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download PDF
+              </a>
+            </div>
+          </div>
+        </div>
+
+      <% } %>
+
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Agenda item -> comment thread sync ────────────────────
+  function selectItem(itemId) {
+    // Highlight the chosen item
+    document.querySelectorAll('.ai').forEach(el => el.classList.remove('selected'));
+    const selectedEl = document.querySelector('.ai[data-item-id="' + itemId + '"]');
+    if (selectedEl) {
+      selectedEl.classList.add('selected');
+      // Update the comment panel header
+      const titleEl = selectedEl.querySelector('.ai-title');
+      const numEl   = selectedEl.querySelector('.ai-num');
+      if (titleEl && numEl) {
+        document.getElementById('selectedItemTitle').textContent =
+          numEl.textContent + '. ' + titleEl.textContent;
+      }
+    }
+    // Toggle thread visibility
+    // .cmt-thread is a flex column with a gap; setting display:block
+    // here silently dropped both the column direction and the spacing,
+    // so the comments ran together. Toggle a class instead and let the
+    // stylesheet own the layout.
+    document.querySelectorAll('.cmt-thread').forEach(t => {
+      t.classList.remove('is-open');
+      t.style.display = '';          // clear any legacy inline value
+    });
+    const targetThread = document.querySelector('.thread-' + itemId);
+    if (targetThread) targetThread.classList.add('is-open');
+
+    // Sync the composer's <select> so posting goes to this item
+    const sel = document.getElementById('composerItemSelect');
+    if (sel) {
+      sel.value = itemId;
+      updateComposerMode();
+    }
+
+    // On a single-column layout (tablet and phone) the comments panel
+    // sits BELOW the whole agenda list, so tapping item fifteen would
+    // leave the reader looking at the list with no visible sign that
+    // anything happened. Bring the panel into view instead.
+    //
+    // On desktop the panel is sticky and already beside the item, so
+    // no scrolling is needed — moving the page there would be jarring.
+    if (window.matchMedia('(max-width: 1024px)').matches) {
+      const panel = document.querySelector('.agenda-right');
+      if (panel && panel.scrollIntoView) {
+        // 'smooth' unless the reader has asked for reduced motion.
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        panel.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }
+    } else if (targetThread) {
+      // Desktop: if the thread was scrolled from a previous item,
+      // start the new one at the top rather than mid-conversation.
+      const body = document.getElementById('cmtThread');
+      if (body) body.scrollTop = 0;
+    }
+  }
+
+  // ── Composer's <select> change -> update the visible thread ─
+  function onComposerItemChange() {
+    const sel = document.getElementById('composerItemSelect');
+    if (sel) selectItem(parseInt(sel.value, 10));
+  }
+
+  // ── Composer mode: swap page/line inputs for Previous Minutes ─
+  function updateComposerMode() {
+    const sel = document.getElementById('composerItemSelect');
+    if (!sel) return;
+    const opt    = sel.options[sel.selectedIndex];
+    const isPrev = opt && opt.getAttribute('data-prev-minutes') === '1';
+    const plRow  = document.getElementById('plRow');
+    const text   = document.getElementById('composerText');
+    const hint   = document.getElementById('composerHint');
+    const page   = document.getElementById('pageInput');
+    const line   = document.getElementById('lineInput');
+    if (plRow) plRow.style.display = isPrev ? 'flex' : 'none';
+    if (text) {
+      text.placeholder = isPrev
+        ? 'Describe the correction to the minutes at the cited page/line…'
+        : 'Share your thoughts on this agenda item…';
+    }
+    if (hint) {
+      hint.textContent = isPrev
+        ? 'Cite the page and line you want corrected; the Secretary will mark it Addressed once revised.'
+        : 'Visible to the Board Secretary & all members.';
+    }
+    if (page) page.required = isPrev;
+    if (line) line.required = isPrev;
+    if (!isPrev) {
+      if (page) page.value = '';
+      if (line) line.value = '';
+    }
+  }
+
+  // Run once on page load so the composer matches the initially-selected item
+  document.addEventListener('DOMContentLoaded', updateComposerMode);
+</script>
+
+</body></html>

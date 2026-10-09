@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OCR Processing | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <%- include('partials/sidebar') %>
+  <div class="main">
+    <%- include('partials/topbar', {pageTitle: 'OCR Processing'}) %>
+    <div class="page">
+      <%
+        const _types = (typeof docTypes !== 'undefined' && docTypes) || ['Resolution', 'Manual', 'Policy', 'Memorandum', 'Other'];
+        const _label = t => t === 'Resolution' ? 'Board Resolution' : t;
+        const r = result;
+      %>
+      <div class="ph">
+        <div><h1><svg class="icon"><use href="#i-scan" xlink:href="#i-scan"/></svg> OCR Processing</h1>
+          </div>
+      </div>
+
+      <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+
+      <%# Step 1 — only the scanned file. Its details are read from it. %>
+      <div class="card mb16 <%= r ? 'ocr-done' : '' %>">
+        <div class="ch"><h3><span class="ocr-step">1</span> Upload the scanned paper</h3>
+          <% if (r && r.fileName) { %><span class="muted fs12">Read: <%= r.fileName %></span><% } %></div>
+        <div class="cb">
+          <form action="/ocr/process" method="POST" enctype="multipart/form-data" id="ocrForm" class="ocr-up">
+            <div class="fg" style="flex:1 1 280px;margin:0"><label>Scanned file (PDF or photo) *</label>
+              <input type="file" name="file" accept=".jpg,.jpeg,.png,.pdf" required></div>
+            <button type="submit" class="btn btn-navy" id="ocrGo"><svg class="icon"><use href="#i-search" xlink:href="#i-search"/></svg> Read the words</button>
+          </form>
+          <span class="ocr-wait" id="ocrWait" hidden><span class="ocr-spin" aria-hidden="true"></span> Reading every page… a scanned page takes a few seconds.</span>
+        </div>
+      </div>
+
+      <% if (!r) { %>
+        <div class="card mb16"><div class="ch"><h3><span class="ocr-step is-off">2</span> Correct the words</h3></div></div>
+        <div class="card"><div class="ch"><h3><span class="ocr-step is-off">3</span> Make the file</h3></div></div>
+      <% } else { %>
+      <%
+        const _paper = r.paper && papers[r.paper] ? r.paper : 'letter';
+        const _isRes = (r.docType || 'Resolution') === 'Resolution';
+        // v97: the layout copied from the scan (margins, spaces, indents, sizes)
+        const _mg = r.margins || null;
+        const _mode = _mg && r.layoutMode !== 'simple' ? 'scan' : 'simple';
+        const _pt = v => (Math.round(Number(v) * 2) / 2) + 'pt';
+        const _pStyle = p => 'text-align:' + p.align + (p.size != null
+            ? ';--b:' + _pt(p.before) + ';--ind:' + _pt(p.indent) + ';--fi:' + _pt(p.first) + ';--fs:' + _pt(p.size) + ';--lh:' + _pt(p.line) : '');
+      %>
+      <form method="POST" id="docForm">
+
+      <%# Step 2 — the words on pages like Microsoft Word's %>
+      <div class="card mb16">
+        <div class="ch"><h3><span class="ocr-step">2</span> Correct the words</h3>
+          <% if (r.confidence && r.confidence !== '—') { %>
+            <span class="muted fs12"><%= r.pagesRead %><%= r.totalPages > r.pagesRead ? ' of ' + r.totalPages : '' %> scanned page<%= r.pagesRead === 1 ? '' : 's' %> · <%= r.confidence %> sure</span>
+          <% } %></div>
+        <div class="cb">
+          <% if (r.totalPages > r.pagesRead) { %>
+            <div class="alert a-warn fs12">Only the first <%= r.pagesRead %> of <%= r.totalPages %> pages were read. Split very long scans into parts.</div>
+          <% } %>
+          <div class="wd" id="wd" data-paper="<%= _paper %>" data-layout="<%= _mode %>"<% if (_mg) { %> style="--smt:<%= _pt(_mg.top) %>;--smr:<%= _pt(_mg.right) %>;--smb:<%= _pt(_mg.bottom) %>;--sml:<%= _pt(_mg.left) %>"<% } %>>
+            <div class="ed-bar" role="toolbar" aria-label="Formatting" aria-controls="ocrEditor">
+              <button type="button" class="ed-btn" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+              <button type="button" class="ed-btn" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic"><i style="font-family:Georgia,serif">I</i></button>
+              <button type="button" class="ed-btn" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+              <span class="ed-sep" aria-hidden="true"></span>
+              <button type="button" class="ed-btn ed-wide" data-case="upper" title="CAPITAL LETTERS">AA</button>
+              <button type="button" class="ed-btn ed-wide" data-case="lower" title="small letters">aa</button>
+              <button type="button" class="ed-btn ed-wide" data-case="title" title="First Letter Of Each Word">Aa</button>
+              <button type="button" class="ed-btn ed-wide" data-case="sentence" title="First letter of the sentence">A.</button>
+              <span class="ed-sep" aria-hidden="true"></span>
+              <button type="button" class="ed-btn" data-cmd="justifyLeft" title="Align left" aria-label="Align left"><svg viewBox="0 0 16 16" class="ed-ico"><path d="M2 3h12M2 6.5h8M2 10h12M2 13.5h8"/></svg></button>
+              <button type="button" class="ed-btn" data-cmd="justifyCenter" title="Center" aria-label="Center"><svg viewBox="0 0 16 16" class="ed-ico"><path d="M2 3h12M4 6.5h8M2 10h12M4 13.5h8"/></svg></button>
+              <button type="button" class="ed-btn" data-cmd="justifyRight" title="Align right" aria-label="Align right"><svg viewBox="0 0 16 16" class="ed-ico"><path d="M2 3h12M6 6.5h8M2 10h12M6 13.5h8"/></svg></button>
+              <button type="button" class="ed-btn" data-cmd="justifyFull" title="Justify (both sides even)" aria-label="Justify"><svg viewBox="0 0 16 16" class="ed-ico"><path d="M2 3h12M2 6.5h12M2 10h12M2 13.5h12"/></svg></button>
+              <span class="ed-sep" aria-hidden="true"></span>
+              <button type="button" class="ed-btn ed-wide" id="edPageBreak" title="Start a new page here (Ctrl+Enter)">Page break</button>
+              <button type="button" class="ed-btn ed-wide" data-cmd="removeFormat" title="Remove bold, italic and underline from the selected words">Plain</button>
+              <button type="button" class="ed-btn" data-cmd="undo" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+              <button type="button" class="ed-btn" data-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+              <span class="ed-sep" aria-hidden="true"></span>
+              <% if (_mg) { %>
+              <label class="ed-paper"><span>Layout</span>
+                <select name="layout" id="edLayout"><option value="scan" <%= _mode === 'scan' ? 'selected' : '' %>>Same as the scan</option><option value="simple" <%= _mode === 'simple' ? 'selected' : '' %>>Simple</option></select></label>
+              <input type="hidden" name="margins" value="<%= JSON.stringify(_mg) %>">
+              <% } %>
+              <label class="ed-paper"><span>Paper</span>
+                <select name="paper" id="edPaper"><% Object.keys(papers).forEach(k => { %><option value="<%= k %>" <%= k === _paper ? 'selected' : '' %>><%= papers[k].label %></option><% }) %></select></label>
+            </div>
+            <div class="wd-desk" id="wdDesk">
+              <div class="wd-scale" id="wdScale">
+                <div class="wd-sheets" id="wdSheets">
+                  <div class="wd-pages" id="wdPages" aria-hidden="true"><div class="wd-page" style="top:0"></div></div>
+                  <div id="ocrEditor" class="ocr-text wd-text" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Words read from the paper"><%
+                    (r.paras || []).forEach(function (p) { %><p style="<%= _pStyle(p) %>"<%- p.size != null ? ' data-l="1"' : '' %><%- p.pb ? ' data-pb="1"' : '' %>><%
+                      p.runs.forEach(function (run) {
+                        const lines = run.text.split('\n');
+                        const fam = run.font === 'Arial' || run.font === 'Courier New' ? run.font : null;
+                        %><%- fam ? '<span style="font-family:' + fam + '">' : '' %><%- run.b ? '<b>' : '' %><%- run.i ? '<i>' : '' %><%- run.u ? '<u>' : '' %><%
+                        lines.forEach(function (ln, k) { %><%- k ? '<br>' : '' %><%= ln %><% });
+                        %><%- run.u ? '</u>' : '' %><%- run.i ? '</i>' : '' %><%- run.b ? '</b>' : '' %><%- fam ? '</span>' : '' %><%
+                      }); %></p><% }); %></div>
+                </div>
+              </div>
+            </div>
+            <div class="wd-status" aria-live="polite">
+              <span id="wdPageOf">Page 1 of 1</span><span id="wdWords"></span>
+              <span class="wd-zoom"><button type="button" class="ed-btn" id="wdOut" aria-label="Zoom out">−</button><span id="wdPct">100%</span><button type="button" class="ed-btn" id="wdIn" aria-label="Zoom in">+</button></span>
+            </div>
+          </div>
+          <input type="hidden" name="doc" id="ocrDoc">
+          <input type="hidden" name="text" id="ocrPlain" value="<%= r.text %>">
+          <p class="ed-msg" id="edMsg" role="alert" hidden></p>
+        </div>
+      </div>
+
+      <%# Step 3 — the details (read from the paper) and the file %>
+      <div class="card">
+        <div class="ch"><h3><span class="ocr-step">3</span> Make the file</h3></div>
+        <div class="cb">
+          <div class="ocr-grid">
+            <div class="fg"><label for="docType">Type *</label>
+              <select name="docType" id="docType"><% _types.forEach(t => { %><option value="<%= t %>" <%= (r.docType || 'Resolution') === t ? 'selected' : '' %>><%= _label(t) %></option><% }) %></select></div>
+            <div class="fg"><label for="docYear">Year *</label>
+              <input type="number" name="year" id="docYear" value="<%= r.year || '' %>" min="1900" max="2100" placeholder="e.g. 2026"></div>
+            <div class="fg ocr-wide"><label for="docTitle">Title *</label>
+              <input type="text" name="title" id="docTitle" value="<%= r.title || '' %>" maxlength="250" placeholder="e.g. Approving the Academic Calendar 2026-2027"></div>
+            <div class="fg"><label for="docNum" id="numLbl"><%= _isRes ? 'Resolution No. *' : 'Reference No.' %></label>
+              <input type="text" name="number" id="docNum" value="<%= r.number || '' %>" maxlength="100" placeholder="<%= _isRes ? 'e.g. 2026-22' : 'e.g. MICT-OM-2026' %>"></div>
+            <div class="fg"><label for="docBody" id="bodyLbl"><%= _isRes ? 'Approved by *' : 'Board / council *' %></label>
+              <select name="governingBody" id="docBody"><% ['Board of Trustees', 'Academic Council', 'Administrative Council', 'RIC Council'].forEach(b => { %><option value="<%= b %>" <%= r.governingBody === b ? 'selected' : '' %>><%= b %></option><% }) %></select></div>
+            <div class="fg ocr-wide" id="wrapApprovedBy" <%= _isRes ? 'hidden' : '' %>><label for="docApprovedBy">Approved by resolution</label>
+              <select name="approvedById" id="docApprovedBy" <%= _isRes ? 'disabled' : '' %>>
+                <option value="">None</option>
+                <% let _y = null; (resolutions || []).forEach(function (x, i) { if (x.doc_year !== _y) { if (_y !== null) { %></optgroup><% } _y = x.doc_year; %><optgroup label="<%= _y %>"><% } %>
+                  <option value="<%= x.document_id %>" <%= String(r.approvedById || '') === String(x.document_id) ? 'selected' : '' %>>Resolution No. <%= x.category || '—' %>: <%= x.title %></option>
+                <% }); if (_y !== null) { %></optgroup><% } %>
+              </select></div>
+          </div>
+          <div class="ocr-actions">
+            <button type="submit" formaction="/ocr/download" name="format" value="docx" class="btn btn-light">
+              <svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download Word
+            </button>
+            <button type="submit" formaction="/ocr/download" name="format" value="pdf" class="btn btn-light">
+              <svg class="icon"><use href="#i-download" xlink:href="#i-download"/></svg> Download PDF
+            </button>
+            <button type="submit" formaction="/ocr/save" class="btn btn-gold" id="saveBtn">
+              <svg class="icon"><use href="#i-save" xlink:href="#i-save"/></svg> <span id="saveLbl">Save PDF to Digital Archive · <%= _isRes ? 'Board Resolutions' : 'Documents' %></span>
+            </button>
+          </div>
+        </div>
+      </div>
+      </form>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>
+  .ocr-step { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #0d1f45; color: #f5c96a;
+              font-size: 12px; font-weight: 800; align-items: center; justify-content: center; margin-right: 6px; }
+  .ocr-step.is-off { background: #cbd5e1; color: #fff; }
+  .ocr-up { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .ocr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; max-width: 760px; }
+  .ocr-grid .ocr-wide { grid-column: 1 / -1; }
+  .ocr-grid [hidden] { display: none; }
+  .ocr-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .ocr-actions .btn-gold { margin-left: auto; }
+  .ocr-wait { display: inline-block; margin-top: 10px; font-size: 12.5px; color: #1a3d80; }
+  .ocr-wait[hidden] { display: none; }
+  .ocr-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; margin-right: 6px; border: 2px solid currentColor;
+              border-right-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; }
+  .ed-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px 8px; background: #f8fafc;
+            border: 1px solid #d5dbe7; border-bottom: 0; border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 4; }
+  .ed-btn { min-width: 32px; height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none;
+            color: #0d1f45; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .ed-btn:hover { background: #e7eefb; }
+  .ed-btn:focus-visible { outline: 2px solid #1a3d80; outline-offset: 1px; }
+  .ed-btn.is-on { background: #dbe5f8; border-color: #b9c9ea; }
+  .ed-wide { font-size: 12.5px; font-weight: 700; }
+  .ed-ico { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .ed-sep { width: 1px; height: 20px; background: #d5dbe7; margin: 0 4px; }
+  .ed-paper { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #475569; margin: 0; }
+  .ed-paper select { width: auto; padding: 4px 8px; font-size: 12.5px; height: 30px; }
+  .ed-msg { color: #c0392b; font-size: 12.5px; margin: 6px 0 0; }
+
+  /* v97: pages like Microsoft Word's Print Layout. Sizes are real inches
+     and points, the same as the Word / PDF file (1-inch margins,
+     Times New Roman 12 pt, lines exactly 15 pt, 10 pt after each paragraph),
+     or (v97 "Same as the scan") the scan's own margins and spaces. */
+  .wd { --pw: 8.5in; --ph: 11in; --gap: 20px; }
+  .wd[data-paper="a4"]   { --pw: 8.27in; --ph: 11.69in; }
+  .wd[data-paper="long"] { --pw: 8.5in;  --ph: 13in; }
+  .wd-desk { background: #e6e8eb; border: 1px solid #d5dbe7; border-top: 0; overflow: auto; max-height: 78vh; min-height: 360px; padding: 22px 12px; }
+  .wd-scale { margin: 0 auto; position: relative; }
+  .wd-sheets { position: absolute; top: 0; left: 0; width: var(--pw); transform-origin: 0 0; }
+  .wd-page { position: absolute; left: 0; width: var(--pw); height: var(--ph); background: #fff;
+             box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.18); }
+  .wd { --mt: 1in; --mr: 1in; --mb: 1in; --ml: 1in; }
+  .wd[data-layout="scan"] { --mt: var(--smt); --mr: var(--smr); --mb: var(--smb); --ml: var(--sml); }
+  .wd-text { position: relative; z-index: 1; display: flow-root; margin: var(--mt) var(--mr) var(--mb) var(--ml);
+             width: calc(var(--pw) - var(--ml) - var(--mr)); min-height: calc(var(--ph) - var(--mt) - var(--mb));
+             font-family: "Times New Roman", "Liberation Serif", Tinos, Times, serif; font-size: 12pt; line-height: 15pt;
+             color: #000; outline: none; word-wrap: break-word; caret-color: #000; }
+  .wd-text p { margin: 0 0 10pt; min-height: 1em; }
+  .wd-text p:has(+ p[data-cont]) { margin-bottom: 0; }
+  /* "Same as the scan": each paragraph's space above, indent, size and line height */
+  .wd[data-layout="scan"] .wd-text p[data-l] { margin-top: var(--b, 0); margin-bottom: 0; margin-left: var(--ind, 0);
+             text-indent: var(--fi, 0); font-size: var(--fs, 12pt); line-height: var(--lh, 15pt); }
+  .wd-status { display: flex; align-items: center; gap: 18px; padding: 4px 10px; font-size: 12px; color: #475569;
+               background: #f1f3f6; border: 1px solid #d5dbe7; border-top: 0; border-radius: 0 0 8px 8px; }
+  .wd-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+  .wd-zoom .ed-btn { min-width: 26px; height: 24px; }
+  #wdPct { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+  @media (max-width: 700px) { .ocr-grid { grid-template-columns: 1fr; } .wd-desk { padding: 12px 6px; } .ocr-actions .btn-gold { margin-left: 0; } }
+</style>
+<script>
+(function () {
+  var f = document.getElementById('ocrForm');
+  if (f) f.addEventListener('submit', function () {
+    document.getElementById('ocrWait').hidden = false;
+    document.getElementById('ocrGo').disabled = true;
+  });
+  // Step 3: a Board Resolution asks for its number and who approved it;
+  // a manual, policy, memorandum or other for a reference no., its board
+  // or council and the resolution that approved it — like the two upload forms.
+  var type = document.getElementById('docType');
+  if (!type) return;
+  var num = document.getElementById('docNum'), numLbl = document.getElementById('numLbl'),
+      bodyLbl = document.getElementById('bodyLbl'), wrap = document.getElementById('wrapApprovedBy'),
+      by = document.getElementById('docApprovedBy'), save = document.getElementById('saveLbl');
+  function sync() {
+    var res = type.value === 'Resolution';
+    numLbl.textContent = res ? 'Resolution No. *' : 'Reference No.';
+    num.placeholder = res ? 'e.g. 2026-22' : 'e.g. MICT-OM-2026';
+    bodyLbl.textContent = res ? 'Approved by *' : 'Board / council *';
+    wrap.hidden = res; by.disabled = res;
+    save.textContent = 'Save PDF to Digital Archive · ' + (res ? 'Board Resolutions' : 'Documents');
+  }
+  type.addEventListener('change', sync); sync();
+})();
+
+// ── The word editor ──────────────────────────────────────────
+(function () {
+  var ed = document.getElementById('ocrEditor');
+  if (!ed) return;
+  var form = document.getElementById('docForm');
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
+  try { document.execCommand('styleWithCSS', false, false); } catch (_) {}
+
+  // Buttons keep the selection (mousedown would otherwise take it away).
+  document.querySelectorAll('.ed-btn').forEach(function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function () {
+      ed.focus();
+      if (b.dataset.cmd) document.execCommand(b.dataset.cmd, false, null);
+      else if (b.dataset.case) changeCase(b.dataset.case);
+      refresh();
+    });
+  });
+
+  // Change capital / small letters of the selected words, keeping their
+  // bold or italic, in a way Undo can take back.
+  function changeCase(mode) {
+    var sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) {
+      note('Select the words first, then click the button.'); return;
+    }
+    var frag = sel.getRangeAt(0).cloneContents();
+    var walker = document.createTreeWalker(frag, NodeFilter.SHOW_TEXT), n, startOfSentence = true;
+    while ((n = walker.nextNode())) {
+      var t = n.data;
+      if (mode === 'upper') t = t.toUpperCase();
+      else if (mode === 'lower') t = t.toLowerCase();
+      else if (mode === 'title') t = t.toLowerCase().replace(/(^|[\s\-\(\["“'])(\p{L})/gu, function (m, a, c) { return a + c.toUpperCase(); });
+      else if (mode === 'sentence') {
+        t = t.toLowerCase().replace(/\p{L}/gu, function (c) {
+          if (startOfSentence) { startOfSentence = false; return c.toUpperCase(); } return c;
+        });
+        if (/[.!?]\s*$/.test(t)) startOfSentence = true;
+      }
+      n.data = t;
+    }
+    var box = document.createElement('div');
+    box.appendChild(frag);
+    document.execCommand('insertHTML', false, box.innerHTML);
+  }
+
+  // Pasted text comes in plain, so odd formatting from other programs stays out.
+  ed.addEventListener('paste', function (e) {
+    e.preventDefault();
+    var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
+
+  // Light up B / I / U / alignment for where the cursor is.
+  function refresh() {
+    document.querySelectorAll('.ed-btn[data-cmd]').forEach(function (b) {
+      var c = b.dataset.cmd;
+      if (['bold', 'italic', 'underline', 'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].indexOf(c) < 0) return;
+      var on = false; try { on = document.queryCommandState(c); } catch (_) {}
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('selectionchange', function () { if (ed.contains(document.activeElement) || document.activeElement === ed) refresh(); });
+
+  var msg = document.getElementById('edMsg');
+  function note(t) { msg.textContent = t; msg.hidden = !t; if (t) setTimeout(function () { msg.hidden = true; }, 3500); }
+
+  // The editor → paragraphs of formatted words, for the server.
+  var BLOCK = /^(P|DIV|H[1-6]|LI|BLOCKQUOTE|PRE|UL|OL)$/;
+  function alignOf(el) {
+    var a = (getComputedStyle(el).textAlign || 'left').toLowerCase();
+    return a === 'center' ? 'center' : a === 'right' || a === 'end' ? 'right' : a === 'justify' ? 'justify' : 'left';
+  }
+  function serialize() {
+    var paras = [], cur = null;
+    var scan = wd.dataset.layout === 'scan';
+    function ptOf(el, name) { var v = el.style.getPropertyValue(name); return v ? parseFloat(v) : 0; }
+    function para(el) {
+      cur = { align: alignOf(el), pb: el !== ed && el.hasAttribute && el.hasAttribute('data-pb'), runs: [] };
+      // "Same as the scan": the paragraph's space above, indent, size, line height.
+      if (scan && el !== ed && el.hasAttribute && el.hasAttribute('data-l')) {
+        cur.before = ptOf(el, '--b'); cur.indent = ptOf(el, '--ind'); cur.first = ptOf(el, '--fi');
+        cur.size = ptOf(el, '--fs') || 12; cur.line = ptOf(el, '--lh') || cur.size * 1.2;
+      }
+      paras.push(cur);
+    }
+    function fontOf(cs) {
+      var f = (cs.fontFamily || '').toLowerCase();
+      return /courier/.test(f) ? 'Courier New' : /arial|helvetica|sans/.test(f.split(',')[0]) ? 'Arial' : undefined;
+    }
+    function walk(node, u) {
+      node.childNodes.forEach(function (c) {
+        if (c.nodeType === 3) {
+          if (!c.data) return;
+          if (!cur) para(node.nodeType === 1 ? node : ed);
+          var cs = getComputedStyle(c.parentNode);
+          cur.runs.push({ text: c.data.replace(/\u00a0/g, ' '), b: parseInt(cs.fontWeight, 10) >= 600,
+                          i: cs.fontStyle === 'italic', u: u || /underline/.test(cs.textDecorationLine || cs.textDecoration || ''), font: fontOf(cs) });
+        } else if (c.nodeType === 1) {
+          if (c.tagName === 'BR') { if (!cur) para(node); cur.runs.push({ text: '\n', b: false, i: false, u: false }); return; }
+          var cu = u || /underline/.test(getComputedStyle(c).textDecorationLine || '');
+          if (BLOCK.test(c.tagName)) {
+            // A paragraph split over two pages (data-cont) is one paragraph.
+            if (c.hasAttribute('data-cont') && node === ed && paras.length) { cur = paras[paras.length - 1]; cur.runs.push({ text: '\n', b: false, i: false, u: false }); }
+            else para(c);
+            walk(c, cu); cur = null;
+          }
+          else walk(c, cu);
+        }
+      });
+    }
+    walk(ed, false);
+    paras.forEach(function (p) {          // a line break at the very end of a paragraph is not kept
+      var last = p.runs[p.runs.length - 1];
+      if (last && /\n$/.test(last.text)) last.text = last.text.replace(/\n+$/, '');
+    });
+    return paras;
+  }
+
+  // ── Pages like Microsoft Word's ─────────────────────────────
+  // The words flow onto pages of the chosen paper with 1-inch margins.
+  // A paragraph that does not fit at the bottom of a page moves to the
+  // next page; a long one is split at a line break (and joined again
+  // when the file is made). A page break starts a new page.
+  var wd = document.getElementById('wd'), desk = document.getElementById('wdDesk'),
+      scaleBox = document.getElementById('wdScale'), sheets = document.getElementById('wdSheets'),
+      pagesBox = document.getElementById('wdPages'), paperSel = document.getElementById('edPaper');
+  var GAP = 20, zoom = null, nPages = 1, M = { pw: 816, ph: 1056, mt: 96, mb: 96 };
+  var layoutSel = document.getElementById('edLayout');
+  function measure() {
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--pw);height:var(--ph);padding-top:var(--mt);padding-bottom:var(--mb);box-sizing:content-box';
+    wd.appendChild(probe);
+    var cs = getComputedStyle(probe);
+    M = { pw: probe.offsetWidth, ph: parseFloat(cs.height), mt: parseFloat(cs.paddingTop), mb: parseFloat(cs.paddingBottom) };
+    probe.remove();
+  }
+  function stride() { return M.ph + GAP; }
+  function content() { return M.ph - M.mt - M.mb; }
+  function blocks() { return Array.prototype.filter.call(ed.children, function (c) { return BLOCK.test(c.tagName); }); }
+  function bottomOf(el) { return el ? el.offsetTop + el.offsetHeight : 0; }
+  function moveTo(el, prev, top) { el.style.marginTop = Math.max(0, top - bottomOf(prev)) + 'px'; }
+  function keepSelection(fn) {
+    var sel = window.getSelection(), a = sel.anchorNode, ao = sel.anchorOffset, f = sel.focusNode, fo = sel.focusOffset;
+    fn();
+    try { if (a && f && a.isConnected && f.isConnected && ed.contains(a)) sel.setBaseAndExtent(a, ao, f, fo); } catch (_) {}
+  }
+  // Splits a paragraph at its last line break that still fits on the page.
+  function splitAt(el, end) {
+    var cut = null, edTop = ed.getBoundingClientRect().top, s = currentScale();
+    Array.prototype.forEach.call(el.childNodes, function (n) {
+      if (n.nodeName !== 'BR' || !n.nextSibling) return;
+      var r = n.getBoundingClientRect();
+      if (r.height && (r.bottom - edTop) / s <= end + 0.5) cut = n;
+    });
+    if (!cut || cut === el.firstChild) return null;
+    var rest = document.createElement(el.tagName);
+    rest.setAttribute('style', el.getAttribute('style') || ''); rest.style.marginTop = '';
+    rest.setAttribute('data-cont', '1');
+    keepSelection(function () {
+      while (cut.nextSibling) rest.appendChild(cut.nextSibling);
+      cut.remove();
+      el.after(rest);
+    });
+    return rest;
+  }
+  var busy = false;
+  function layout() {
+    if (busy) return; busy = true;
+    try {
+      var S = stride(), C = content();
+      var list = blocks();
+      list.forEach(function (b) { if (b.style.marginTop) b.style.marginTop = ''; });
+      for (var i = 0; i < list.length; i++) {
+        var b = list[i], prev = list[i - 1] || null;
+        var y = b.offsetTop, h = b.offsetHeight, k = Math.floor(y / S), top = k * S, end = top + C;
+        if (b.hasAttribute('data-pb') && i > 0 && y > top + 0.5) {
+          // A new page keeps the space above the first line ("Same as the scan").
+          var above = wd.dataset.layout === 'scan' && b.hasAttribute('data-l') ? parseFloat(getComputedStyle(b).marginTop) || 0 : 0;
+          moveTo(b, prev, (k + 1) * S + above); continue;
+        }
+        if (y > end) { moveTo(b, prev, (k + 1) * S); y = b.offsetTop; h = b.offsetHeight; k = Math.floor(y / S); top = k * S; end = top + C; }
+        if (y + h > end + 0.5) {
+          // Fits on one page: the whole paragraph goes to the next page
+          // (Word's "Keep lines together", which the file uses too).
+          if (h <= C) { if (y > top + 0.5) moveTo(b, prev, (k + 1) * S); continue; }
+          // Longer than a page: it starts on a new page and continues
+          // on the next one (as Word does with "Keep lines together").
+          if (y > top + 0.5) { moveTo(b, prev, (k + 1) * S); y = b.offsetTop; k = Math.floor(y / S); top = k * S; end = top + C; }
+          var rest = splitAt(b, end);
+          if (rest) list.splice(i + 1, 0, rest);
+        }
+      }
+      var last = list[list.length - 1];
+      nPages = Math.max(1, Math.floor(Math.max(0, bottomOf(last) - 1) / S) + 1);
+      ed.style.minHeight = ((nPages - 1) * S + C) + 'px';
+      var html = '';
+      for (var p = 0; p < nPages; p++) html += '<div class="wd-page" style="top:' + (p * S) + 'px"></div>';
+      pagesBox.innerHTML = html;
+      fit();
+      status();
+    } finally { busy = false; }
+  }
+  function currentScale() {
+    var fitS = Math.min(1, (desk.clientWidth - 24) / M.pw);
+    return zoom || Math.max(0.3, fitS);
+  }
+  function fit() {
+    var s = currentScale(), totalH = nPages * stride() - GAP;
+    sheets.style.transform = 'scale(' + s + ')';
+    scaleBox.style.width = (M.pw * s) + 'px';
+    scaleBox.style.height = (totalH * s) + 'px';
+    document.getElementById('wdPct').textContent = Math.round(s * 100) + '%';
+  }
+  function status() {
+    var page = 1, sel = window.getSelection();
+    if (sel.rangeCount && ed.contains(sel.anchorNode)) {
+      var r = sel.getRangeAt(0).getClientRects()[0] || (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentNode).getBoundingClientRect();
+      var y = (r.top - ed.getBoundingClientRect().top) / currentScale();
+      page = Math.min(nPages, Math.max(1, Math.floor(y / stride()) + 1));
+    }
+    document.getElementById('wdPageOf').textContent = 'Page ' + page + ' of ' + nPages;
+    var words = (ed.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+    document.getElementById('wdWords').textContent = words + ' word' + (words === 1 ? '' : 's');
+  }
+  var timer = null;
+  function later() { clearTimeout(timer); timer = setTimeout(function () { requestAnimationFrame(layout); }, 120); }
+  ed.addEventListener('input', function (e) {
+    // A new paragraph (Enter) is a paragraph of its own, not a page break
+    // or the rest of a split paragraph.
+    if (e.inputType === 'insertParagraph') {
+      var sel = window.getSelection(), n = sel.anchorNode;
+      var blk = n && (n.nodeType === 1 ? n : n.parentNode).closest('p,div,h1,h2,h3,h4,h5,h6,li,blockquote,pre');
+      if (blk && blk !== ed && ed.contains(blk)) { blk.removeAttribute('data-cont'); if (!pbNext) blk.removeAttribute('data-pb'); }
+    }
+    later();
+  });
+  var pbNext = false;
+  function pageBreak() {
+    ed.focus();
+    pbNext = true;
+    document.execCommand('insertParagraph', false, null);
+    pbNext = false;
+    var sel = window.getSelection(), n = sel.anchorNode;
+    var blk = n && (n.nodeType === 1 ? n : n.parentNode).closest('p,div');
+    if (blk && blk !== ed && ed.contains(blk)) { blk.setAttribute('data-pb', '1'); blk.removeAttribute('data-cont'); }
+    layout();
+  }
+  document.getElementById('edPageBreak').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  document.getElementById('edPageBreak').addEventListener('click', pageBreak);
+  ed.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pageBreak(); } });
+  // A paragraph split over two pages is joined again before it is laid
+  // out on another paper size.
+  function joinSplits() {
+    keepSelection(function () {
+      Array.prototype.slice.call(ed.querySelectorAll(':scope > [data-cont]')).forEach(function (c) {
+        var prev = c.previousElementSibling;
+        if (!prev) { c.removeAttribute('data-cont'); return; }
+        prev.appendChild(document.createElement('br'));
+        while (c.firstChild) prev.appendChild(c.firstChild);
+        c.remove();
+      });
+    });
+  }
+  paperSel.addEventListener('change', function () { wd.dataset.paper = paperSel.value; measure(); joinSplits(); layout(); });
+  if (layoutSel) layoutSel.addEventListener('change', function () { wd.dataset.layout = layoutSel.value; measure(); joinSplits(); layout(); });
+  document.getElementById('wdIn').addEventListener('click', function () { zoom = Math.min(2, Math.round((currentScale() + 0.1) * 10) / 10); fit(); });
+  document.getElementById('wdOut').addEventListener('click', function () { zoom = Math.max(0.3, Math.round((currentScale() - 0.1) * 10) / 10); fit(); });
+  window.addEventListener('resize', function () { if (!zoom) fit(); });
+  document.addEventListener('selectionchange', function () { if (ed.contains(document.getSelection().anchorNode)) status(); });
+  measure(); layout();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+  window.boardlinkLayout = layout;
+
+  // A download does not open a new page, so its button is made usable
+  // again once the file has had time to arrive.
+  form.addEventListener('submit', function (e) {
+    var b = e.submitter;
+    if (b && b.name === 'format') setTimeout(function () { b.classList.remove('is-loading'); }, 2500);
+  });
+  form.addEventListener('submit', function (e) {
+    var paras = serialize();
+    var plain = paras.map(function (p) { return p.runs.map(function (r) { return r.text; }).join(''); }).join('\n\n').trim();
+    if (!plain) { e.preventDefault(); note('There are no words in the editor.'); return; }
+    document.getElementById('ocrDoc').value = JSON.stringify(paras);
+    document.getElementById('ocrPlain').value = plain;
+  });
+})();
+</script>
+</body></html>

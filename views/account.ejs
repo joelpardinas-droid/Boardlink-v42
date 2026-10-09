@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= { signup: 'Sign Up', 'signup-verify': 'Enter Your Code', pending: 'Waiting for Approval', forgot: 'Forgot Password', reset: 'Choose a New Password', 'google-finish': 'Finish Signing Up' }[step] || 'Account' %> | BOARDLINK</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<%- include('partials/icons') %>
+<div class="auth">
+  <div class="auth-photo" role="img" aria-label="Camarines Sur Polytechnic Colleges campus"></div>
+  <div class="auth-panel">
+  <div class="login-card acct-card">
+    <div class="brand auth-brand">
+      <div class="bico"><svg class="icon"><use href="#i-clipboard" xlink:href="#i-clipboard"/></svg></div>
+      <h1>BOARD<span>LINK</span></h1>
+    </div>
+
+    <% if (error) { %><div class="alert a-err"><svg class="icon"><use href="#i-alert" xlink:href="#i-alert"/></svg> <%= error %></div><% } %>
+    <% if (info) { %><div class="alert acct-info"><svg class="icon"><use href="#i-mail" xlink:href="#i-mail"/></svg> <%= info %></div><% } %>
+
+    <% if (step === 'signup') { %>
+      <h2 class="acct-h">Create an account</h2>
+      <% if (googleEnabled) { %>
+        <a href="/auth/google" class="btn btn-google btn-full"><%- include('partials/google-g') %> Sign up with Google</a>
+        <div class="acct-or"><span>or use the form</span></div>
+      <% } %>
+      <form action="/signup" method="POST" autocomplete="on">
+        <div class="fg"><label for="suName">Full name</label>
+          <input id="suName" name="fullName" value="<%= fullName %>" placeholder="e.g. Atty. Juan A. Dela Cruz" autocomplete="name" required maxlength="100"></div>
+        <div class="fg"><label for="suEmail">Gmail address</label>
+          <input id="suEmail" type="email" name="email" value="<%= email %>" placeholder="yourname@gmail.com" autocomplete="email" inputmode="email" required>
+          </div>
+        <div class="fg"><label for="suType">I am a member of</label>
+          <select id="suType" name="requested" required>
+            <option value="">Choose…</option>
+            <% types.forEach(function (t) { %><option value="<%= t.key %>" <%= requested === t.key ? 'selected' : '' %>><%= t.label %></option><% }) %>
+          </select></div>
+        <div class="fg"><label for="suPw">Password</label>
+          <input id="suPw" type="password" name="password" autocomplete="new-password" minlength="8" required
+                 placeholder="At least 8 characters, letters and numbers"></div>
+        <div class="fg"><label for="suPw2">Type the password again</label>
+          <input id="suPw2" type="password" name="confirm" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn btn-navy btn-full" type="submit"><svg class="icon" style="color:inherit"><use href="#i-mail" xlink:href="#i-mail"/></svg> Send my code</button>
+      </form>
+      <p class="acct-foot">Already have an account? <a href="/">Sign in</a></p>
+
+    <% } else if (step === 'signup-verify') { %>
+      <h2 class="acct-h">Check your Gmail</h2>
+      <p class="acct-p">Code sent to <strong><%= email %></strong>.</p>
+      <form action="/signup/verify" method="POST">
+        <input type="hidden" name="email" value="<%= email %>">
+        <div class="fg"><label for="vCode">6-digit code</label>
+          <input id="vCode" name="code" class="acct-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required autofocus></div>
+        <button class="btn btn-navy btn-full" type="submit"><svg class="icon" style="color:inherit"><use href="#i-check" xlink:href="#i-check"/></svg> Finish signing up</button>
+      </form>
+      <p class="acct-foot"><a href="/signup">Sign up again</a></p>
+
+    <% } else if (step === 'pending') { %>
+      <% if (typeof blockedOnly !== 'undefined' && blockedOnly) { %>
+        <p class="acct-foot"><a href="/">Back to sign in</a></p>
+      <% } else { %>
+        <div class="acct-done"><svg class="icon"><use href="#i-check-circle" xlink:href="#i-check-circle"/></svg></div>
+        <h2 class="acct-h tc">Waiting for approval</h2>
+        <p class="acct-p tc">
+          <% if (fullName) { %>Thank you, <strong><%= fullName %></strong>. <% } %>
+          Your account <strong><%= email %></strong><% if (requested) { %> asked to join as <strong><%= requested %></strong><% } %>.
+        </p>
+        <p class="acct-foot"><a href="/">Back to sign in</a></p>
+      <% } %>
+
+    <% } else if (step === 'forgot') { %>
+      <h2 class="acct-h">Forgot your password?</h2>
+      <form action="/forgot-password" method="POST">
+        <div class="fg"><label for="fEmail">Gmail address</label>
+          <input id="fEmail" type="email" name="email" value="<%= email %>" placeholder="yourname@gmail.com" autocomplete="email" inputmode="email" required autofocus></div>
+        <button class="btn btn-navy btn-full" type="submit"><svg class="icon" style="color:inherit"><use href="#i-mail" xlink:href="#i-mail"/></svg> Send me a code</button>
+      </form>
+      <p class="acct-foot"><a href="/">Back to sign in</a></p>
+
+    <% } else if (step === 'reset') { %>
+      <h2 class="acct-h">Choose a new password</h2>
+      <form action="/reset-password" method="POST">
+        <input type="hidden" name="email" value="<%= email %>">
+        <div class="fg"><label for="rCode">6-digit code from your Gmail</label>
+          <input id="rCode" name="code" class="acct-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required autofocus></div>
+        <div class="fg"><label for="rPw">New password</label>
+          <input id="rPw" type="password" name="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters, letters and numbers"></div>
+        <div class="fg"><label for="rPw2">Type it again</label>
+          <input id="rPw2" type="password" name="confirm" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn btn-navy btn-full" type="submit"><svg class="icon" style="color:inherit"><use href="#i-lock" xlink:href="#i-lock"/></svg> Save new password</button>
+      </form>
+      <form action="/forgot-password" method="POST" class="acct-resend" data-no-spinner>
+        <input type="hidden" name="email" value="<%= email %>">
+        No code? <button type="submit" class="acct-link">Send a new one</button>
+      </form>
+      <p class="acct-foot"><a href="/">Back to sign in</a></p>
+
+    <% } else if (step === 'google-finish') { %>
+      <h2 class="acct-h">Almost done</h2>
+      <form action="/signup/google" method="POST">
+        <div class="fg"><label for="gName">Full name</label>
+          <input id="gName" name="fullName" value="<%= fullName %>" required maxlength="100"></div>
+        <div class="fg"><label for="gType">I am a member of</label>
+          <select id="gType" name="requested" required>
+            <option value="">Choose…</option>
+            <% types.forEach(function (t) { %><option value="<%= t.key %>"><%= t.label %></option><% }) %>
+          </select></div>
+        <button class="btn btn-navy btn-full" type="submit"><svg class="icon" style="color:inherit"><use href="#i-check" xlink:href="#i-check"/></svg> Send for approval</button>
+      </form>
+      <p class="acct-foot"><a href="/">Cancel</a></p>
+    <% } %>
+  </div>
+</div>
+</div>
+</body></html>

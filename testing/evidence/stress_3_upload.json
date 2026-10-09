@@ -1,0 +1,17 @@
+{
+ "name": "Concurrent Upload Load",
+ "uploads": 20,
+ "fileBytes": 1062484,
+ "analyzeOk": 20,
+ "uploadOk": 20,
+ "ocrReadNumber": 20,
+ "rowsBefore": 10,
+ "rowsAfter": 30,
+ "rowsAdded": 20,
+ "rowsWithFile": 20,
+ "failed": [],
+ "avgMs": 51379,
+ "minMs": 40814,
+ "maxMs": 65033,
+ "wallMs": 65181
+}
